@@ -37,19 +37,19 @@ fn get_crop(img: &DynamicImage) -> Option<Crop> {
 
     // top edge
     // scan left to right, from top to bottom
-    crop.top = scan_edge(&img, 0..height, 0..width, true)?.1;
+    crop.top = scan_edge(&img, 0..height, 0..width, true)?.y;
 
     // right edge
     // scan top to bottom, from right to left
-    crop.right = scan_edge(&img, (0..width).rev().into_iter(), 0..height, false)?.0;
+    crop.right = scan_edge(&img, (0..width).rev().into_iter(), 0..height, false)?.x;
 
     // bottom edge
     // scan left to right, from bottom to top
-    crop.bottom = scan_edge(&img, (0..height).rev().into_iter(), 0..width, true)?.1;
+    crop.bottom = scan_edge(&img, (0..height).rev().into_iter(), 0..width, true)?.y;
 
     // left edge
     // scan top to bottom, from left to right
-    crop.left = scan_edge(&img, 0..width, 0..height, false)?.0;
+    crop.left = scan_edge(&img, 0..width, 0..height, false)?.x;
 
     crop.width = crop.right - crop.left + 1;
     crop.height = crop.bottom - crop.top + 1;
@@ -76,16 +76,22 @@ fn scan_edge(
                         x, y, red, green, blue, alpha
                     );
 
-                    return Some(Point(x, y));
+                    return Some(Point { x, y });
                 }
             }
         }
     }
 
     return if reversed {
-        Some(Point(range_b.last()?, range_a.last()?))
+        Some(Point {
+            x: range_b.last()?,
+            y: range_a.last()?,
+        })
     } else {
-        Some(Point(range_a.last()?, range_b.last()?))
+        Some(Point {
+            x: range_a.last()?,
+            y: range_b.last()?,
+        })
     };
 }
 
@@ -101,4 +107,7 @@ struct Crop {
 }
 
 #[derive(Default, Debug)]
-struct Point(u32, u32);
+struct Point {
+    x: u32,
+    y: u32,
+}
