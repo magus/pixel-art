@@ -26,19 +26,46 @@ fn main() {
     println!("{:?}", crop);
 }
 
-fn get_crop(img: DynamicImage) -> Crop {
+fn get_crop(img: DynamicImage) -> Option<Crop> {
     let mut crop = Crop {
         ..Default::default()
     };
 
     let (width, height) = img.dimensions();
 
-    let mut scan_done = false;
-
     // top edge
     // scan left to right, from top to bottom
-    for y in 0..height {
-        for x in 0..width {
+    crop.top = scan_edge(&img, 0..height, 0..width, true)?.1;
+
+    // right edge
+    // scan top to bottom, from right to left
+    crop.right = scan_edge(&img, (0..width).rev().into_iter(), 0..height, false)?.0;
+
+    // bottom edge
+    // scan left to right, from bottom to top
+    crop.bottom = scan_edge(&img, (0..height).rev().into_iter(), 0..width, true)?.1;
+
+    // left edge
+    // scan top to bottom, from left to right
+    crop.left = scan_edge(&img, 0..width, 0..height, false)?.0;
+
+    crop.width = crop.right - crop.left + 1;
+    crop.height = crop.bottom - crop.top + 1;
+
+    return Some(crop);
+}
+
+fn scan_edge(
+    img: &DynamicImage,
+    range_a: impl Iterator<Item = u32> + Clone,
+    range_b: impl Iterator<Item = u32> + Clone,
+    reversed: bool,
+) -> Option<Point> {
+    for a in range_a.clone() {
+        for b in range_b.clone() {
+            // put a and b into the correct x,y variables
+            let (x, y) = if reversed { (b, a) } else { (a, b) };
+
             let pixel = img.get_pixel(x, y);
             if let [red, green, blue, alpha] = pixel.channels() {
                 if *alpha != 0 {
@@ -47,104 +74,17 @@ fn get_crop(img: DynamicImage) -> Crop {
                         x, y, red, green, blue, alpha
                     );
 
-                    crop.top = y;
-
-                    scan_done = true;
-                    break;
+                    return Some(Point(x, y));
                 }
             }
         }
-
-        if scan_done {
-            break;
-        }
     }
 
-    scan_done = false;
-
-    // right edge
-    // scan top to bottom, from right to left
-    for x in (0..width).rev() {
-        for y in 0..height {
-            let pixel = img.get_pixel(x, y);
-            if let [red, green, blue, alpha] = pixel.channels() {
-                if *alpha != 0 {
-                    println!(
-                        "![RIGHT] ({},{}) [R{:?}G{:?}B{:?}A{:?}]",
-                        x, y, red, green, blue, alpha
-                    );
-
-                    crop.right = x;
-
-                    scan_done = true;
-                    break;
-                }
-            }
-        }
-
-        if scan_done {
-            break;
-        }
-    }
-
-    scan_done = false;
-
-    // bottom edge
-    // scan left to right, from bottom to top
-    for y in (0..height).rev() {
-        for x in 0..width {
-            let pixel = img.get_pixel(x, y);
-            if let [red, green, blue, alpha] = pixel.channels() {
-                if *alpha != 0 {
-                    println!(
-                        "![BOTTOM] ({},{}) [R{:?}G{:?}B{:?}A{:?}]",
-                        x, y, red, green, blue, alpha
-                    );
-
-                    crop.bottom = y;
-
-                    scan_done = true;
-                    break;
-                }
-            }
-        }
-
-        if scan_done {
-            break;
-        }
-    }
-
-    scan_done = false;
-
-    // left edge
-    // scan top to bottom, from left to right
-    for x in 0..width {
-        for y in 0..height {
-            let pixel = img.get_pixel(x, y);
-            if let [red, green, blue, alpha] = pixel.channels() {
-                if *alpha != 0 {
-                    println!(
-                        "![LEFT] ({},{}) [R{:?}G{:?}B{:?}A{:?}]",
-                        x, y, red, green, blue, alpha
-                    );
-
-                    crop.left = x;
-
-                    scan_done = true;
-                    break;
-                }
-            }
-        }
-
-        if scan_done {
-            break;
-        }
-    }
-
-    crop.width = crop.right - crop.left + 1;
-    crop.height = crop.bottom - crop.top + 1;
-
-    return crop;
+    return if reversed {
+        Some(Point(range_b.last()?, range_a.last()?))
+    } else {
+        Some(Point(range_a.last()?, range_b.last()?))
+    };
 }
 
 #[derive(Default, Debug)]
@@ -157,3 +97,6 @@ struct Crop {
     width: u32,
     height: u32,
 }
+
+#[derive(Default, Debug)]
+struct Point(u32, u32);
