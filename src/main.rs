@@ -70,7 +70,7 @@ fn scan_edge(
             if let [red, green, blue, alpha] = pixel.channels() {
                 if *alpha != 0 {
                     println!(
-                        "![TOP] ({},{}) [R{:?}G{:?}B{:?}A{:?}]",
+                        "![EDGE] ({: >3},{: >3}) [R{:>4}, G{:>4}, B{:>4}, A{:>4}]",
                         x, y, red, green, blue, alpha
                     );
 
