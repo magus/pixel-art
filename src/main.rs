@@ -23,11 +23,12 @@ fn main() {
         println!("R{:?} G{:?} B{:?} A{:?}", red, green, blue, alpha);
     }
 
-    let crop = get_crop(img);
+    let crop = get_crop(&img);
+
     println!("{:?}", crop);
 }
 
-fn get_crop(img: DynamicImage) -> Option<Crop> {
+fn get_crop(img: &DynamicImage) -> Option<Crop> {
     let mut crop = Crop {
         ..Default::default()
     };
