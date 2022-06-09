@@ -1,16 +1,22 @@
+use std::cmp;
+use std::error::Error;
+use std::fs;
+
 use image::DynamicImage;
 use image::GenericImageView;
 use image::Pixel;
+use image::RgbaImage;
 
-fn main() {
+fn main() -> Result<(), Box<dyn Error>> {
     // Use the open function to load an image from a Path.
     // `open` returns a `DynamicImage` on success.
-    // let img = image::open("./images/pikachu.png").unwrap();
+    let img = image::open("./images/pikachu.png").unwrap();
     // let img = image::open("./images/charizard.png").unwrap();
-    let img = image::open("./images/venusaur.png").unwrap();
+    // let img = image::open("./images/venusaur.png").unwrap();
 
     // The dimensions method returns the images width and height.
-    println!("dimensions {:?}", img.dimensions());
+    let dimensions = img.dimensions();
+    println!("dimensions {:?}", dimensions);
 
     // The color method returns the image's `ColorType`.
     println!("{:?}", img.color());
@@ -23,9 +29,49 @@ fn main() {
         println!("R{:?} G{:?} B{:?} A{:?}", red, green, blue, alpha);
     }
 
-    let crop = get_crop(&img);
-
+    let crop = get_crop(&img).unwrap();
     println!("{:?}", crop);
+
+    let mut x_start: u32 = 0;
+    let mut y_start: u32 = 0;
+    let size: u32 = cmp::max(crop.width, crop.height);
+
+    if crop.width > crop.height {
+        y_start += (crop.width - crop.height) / 2;
+        println!("wider");
+    } else {
+        x_start += (crop.height - crop.width) / 2;
+        println!("taller",);
+    }
+
+    println!(
+        "size {:>3}x{:<3} ; start @ ({:>3}, {:>3})",
+        size, size, x_start, y_start
+    );
+
+    println!(
+        "{:.2}% size reduction",
+        ((size * 100) as f32 / dimensions.0 as f32)
+    );
+
+    // copy source pixels to image buffer and save to view cropped image
+
+    let mut cropped_img = RgbaImage::new(size, size);
+    // https://docs.rs/image/latest/image/struct.ImageBuffer.html
+    for x in 0..crop.width {
+        for y in 0..crop.height {
+            // println!("pixel({:>3}, {:>3})", crop.left + x, crop.top + y);
+            // grab from source
+            let pixel = img.get_pixel(crop.left + x, crop.top + y);
+            // place into cropped image buffer
+            cropped_img.put_pixel(x_start + x, y_start + y, pixel);
+        }
+    }
+
+    fs::create_dir_all("output/")?;
+    cropped_img.save("output/cropped.png")?;
+
+    return Ok(());
 }
 
 fn get_crop(img: &DynamicImage) -> Option<Crop> {
