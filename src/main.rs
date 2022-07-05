@@ -85,24 +85,22 @@ fn get_crop(img: &DynamicImage) -> Option<Crop> {
         ..Default::default()
     };
 
-    let dimensions = img.dimensions();
-
     // top edge
     // scan from top to bottom, going left to right
     // crop.top = scan_edge(&img, 0..height, 0..width, true, is_pixel_not_alpha)?;
-    crop.top = scan_edge(&img, dimensions, Scan::TopToBottom, is_pixel_not_alpha);
+    crop.top = scan_edge(&img, Scan::TopToBottom, is_pixel_not_alpha);
 
     // right edge
     // scan from right to left, going top to bottom
-    crop.right = scan_edge(&img, dimensions, Scan::RightToLeft, is_pixel_not_alpha);
+    crop.right = scan_edge(&img, Scan::RightToLeft, is_pixel_not_alpha);
 
     // bottom edge
     // scan from bottom to top, going left to right
-    crop.bottom = scan_edge(&img, dimensions, Scan::BottomToTop, is_pixel_not_alpha);
+    crop.bottom = scan_edge(&img, Scan::BottomToTop, is_pixel_not_alpha);
 
     // left edge
     // scan from left to right, going top to bottom
-    crop.left = scan_edge(&img, dimensions, Scan::LeftToRight, is_pixel_not_alpha);
+    crop.left = scan_edge(&img, Scan::LeftToRight, is_pixel_not_alpha);
 
     return Some(crop);
 }
@@ -125,15 +123,10 @@ fn range(start: u32, end: u32) -> Box<dyn Iterator<Item = u32>> {
     return Box::new(start..end);
 }
 
-fn scan_edge(
-    img: &DynamicImage,
-    dimensions: (u32, u32),
-    scan: Scan,
-    test: fn(&DynamicImage, Point) -> bool,
-) -> u32 {
+fn scan_edge(img: &DynamicImage, scan: Scan, test: fn(&DynamicImage, Point) -> bool) -> u32 {
     println!("\nscan_edge [scan=[{:?}]", scan);
 
-    let (width, height) = dimensions;
+    let (width, height) = img.dimensions();
 
     let (range_a_start, range_a_end, range_b_start, range_b_end) = match scan {
         Scan::LeftToRight => (0, width, 0, height),
