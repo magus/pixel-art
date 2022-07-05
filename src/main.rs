@@ -23,7 +23,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 }
 
 fn output_cropped(img: &DynamicImage, output_path: &str) -> Result<(), Box<dyn Error>> {
-    let crop = get_crop(&img);
+    let crop = get_zealous_crop(&img);
 
     println!("\n🤖 output_cropped");
 
@@ -80,7 +80,7 @@ fn print_crop(crop_size: u32, original_size: u32) {
     );
 }
 
-fn get_crop(img: &DynamicImage) -> Crop {
+fn get_zealous_crop(img: &DynamicImage) -> Crop {
     let mut crop = Crop {
         ..Default::default()
     };
