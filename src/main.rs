@@ -87,7 +87,6 @@ fn get_crop(img: &DynamicImage) -> Option<Crop> {
 
     // top edge
     // scan from top to bottom, going left to right
-    // crop.top = scan_edge(&img, 0..height, 0..width, true, is_pixel_not_alpha)?;
     crop.top = scan_edge(&img, Scan::TopToBottom, is_pixel_not_alpha);
 
     // right edge
