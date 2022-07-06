@@ -5,6 +5,15 @@ edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
+# # tips to minimize the size of a rust binary
+# # https://github.com/johnthagen/min-sized-rust
+# [profile.release]
+# strip = true      # automatically strip symbols from the binary
+# opt-level = "z"   # optimize for size
+# lto = true        # instructs the linker to optimize at the link stage
+# codegen-units = 1 # allow for maximum size reduction optimizations (default is 16 parallel compile units)
+# panic = "abort"   # abort immediately instead of unwind with backtrace
+
 [dependencies]
 colored = "2.0.0"
 image = "0.24.2"
