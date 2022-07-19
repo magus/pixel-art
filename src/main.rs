@@ -1,27 +1,60 @@
-use std::error::Error;
-
-use image::Pixel;
-
+use image::RgbaImage;
 use pixel_art::image as pixel_art_image;
+use std::error::Error;
 
 fn main() -> Result<(), Box<dyn Error>> {
     // Use the open function to load an image from a Path.
     // `open` returns a `DynamicImage` on success.
-    let img = image::open("./images/pikachu.png").unwrap();
+    // let img = image::open("./images/pikachu.png").unwrap();
     // let img = image::open("./images/charizard.png").unwrap();
-    // let img = image::open("./images/venusaur.png").unwrap();
+    let img = image::open("./images/venusaur.png").unwrap();
+    // let img = image::open("./images/758.png").unwrap();
+    // let img = image::open("./images/magus.jpg").unwrap();
+    // let img = image::open("./images/IMG_0383.PNG").unwrap();
+    // let img = image::open("./images/portrait-landscape.JPG").unwrap();
+    // let img = image::open("./images/landscape.webp").unwrap();
+    // let img = image::open("./images/horse.JPG").unwrap();
+    // let img = image::open("./images/panda-bear.JPG").unwrap();
 
     let img = pixel_art_image::zealous_crop(&img);
     pixel_art_image::output(&img, "./output/cropped.png")?;
 
     // draw image to cli
-    pixel_art_image::print(&img);
+    // pixel_art_image::print(&img);
 
-    let colors = pixel_art_image::palette(&img);
+    let palette = pixel_art_image::palette(&img);
+
+    println!("\n🤖 pixelate\n");
+
+    let palette_size = palette.len();
 
     let (width, height) = img.dimensions();
     let output_size = 8;
-    let window_size = width / output_size;
+    let grid_scalar = width as f32 / output_size as f32;
+    // let grid_size = (width as f32 / output_size as f32).ceil() as u32;
+    let grid_size = width / output_size;
+
+    println!("  [output_size={}]", output_size);
+    println!("  [grid_scalar={}]", grid_scalar);
+    println!("  [grid_size={}]", grid_size);
+
+    // initialize vector for each palette color for each grid cell
+    // e.g. [0, 0, 0] maps to [color_1, color_2, color_3]
+    // we will increment the value at idnex when a pixel is closest to a particular color
+    // end result will allow us to determine most representative palette color for a grid cell
+    let mut color_counts = vec![];
+    for _ in 0..output_size {
+        let mut row = vec![];
+
+        for _ in 0..output_size {
+            let colors = vec![0; palette_size];
+            row.push(colors);
+        }
+
+        color_counts.push(row);
+    }
+
+    // println!("[color_counts={:?}]", color_counts);
 
     for x in 0..width {
         for y in 0..height {
@@ -30,22 +63,88 @@ fn main() -> Result<(), Box<dyn Error>> {
             // for each grid cell (window), calculate most frequent color
             // color that cell with that color in final output
 
-            let x_window = x / window_size;
-            let y_window = y / window_size;
+            // let grid_x = x / grid_size;
+            let grid_x = (x as f32 / grid_scalar).floor() as u32;
+            // let grid_y = y / grid_size;
+            let grid_y = (y as f32 / grid_scalar).floor() as u32;
 
-            // println!("({},{})=({},{})", x, y, x_window, y_window);
+            // keep grid within output_size
+            let grid_x = if grid_x >= output_size {
+                output_size - 1
+            } else {
+                grid_x
+            };
+
+            let grid_y = if grid_y >= output_size {
+                output_size - 1
+            } else {
+                grid_y
+            };
+
+            let debug = false;
+            // let debug = grid_x == 3 && grid_y == 3;
+
+            let grid_cell = color_counts
+                .get_mut(grid_x as usize)
+                .unwrap()
+                .get_mut(grid_y as usize)
+                .unwrap();
 
             let pixel = img.get_pixel(x, y);
-            if let [r, g, b, alpha] = pixel.channels() {
-                if *alpha == 0 {
-                    // count transparent pixel
-                } else {
-                    // find closest color match
-                    // increment counter
-                }
-            };
+
+            let closest_index = pixel_art_image::closest_rgb(&palette, pixel, debug);
+            grid_cell[closest_index] += 1;
+
+            if debug {
+                println!(
+                    "[{},{}]({},{})={:?} [closest_index={}]",
+                    grid_x, grid_y, x, y, pixel, closest_index
+                )
+            }
+
+            // println!(
+            //     "({},{})=({},{}) [closest_index={}] {:?}",
+            //     x, y, grid_x, grid_y, closest_index, grid_cell
+            // );
         }
     }
+
+    // println!("[color_counts={:?}]", color_counts);
+
+    let mut pixelated = RgbaImage::new(output_size, output_size);
+    // https://docs.rs/image/latest/image/struct.ImageBuffer.html
+    for x in 0..pixelated.width() {
+        for y in 0..pixelated.height() {
+            let grid_cell = color_counts
+                .get(x as usize)
+                .unwrap()
+                .get(y as usize)
+                .unwrap();
+
+            // walk each palette color count in grid_cell vector
+            // discover the highest count and color this pixel that color
+            let mut found_max = false;
+            let mut max_index = 0;
+            let mut max_count = &0;
+            for index in 0..grid_cell.len() {
+                let count = grid_cell.get(index).unwrap();
+
+                if count > max_count {
+                    found_max = true;
+                    max_index = index;
+                    max_count = count;
+                }
+            }
+
+            // color pixel the palette color of max_index
+            if found_max {
+                pixelated.put_pixel(x, y, *palette.get(max_index).unwrap());
+            }
+        }
+    }
+
+    // pixel_art_image::print(&pixelated);
+    pixel_art_image::output(&pixelated, "./output/pixelated.png")?;
 
     return Ok(());
 }
