@@ -1,4 +1,6 @@
-use image::RgbaImage;
+use image::DynamicImage;
+use image::GenericImage;
+use image::GenericImageView;
 use pixel_art::image as pixel_art_image;
 use std::error::Error;
 
@@ -7,17 +9,20 @@ fn main() -> Result<(), Box<dyn Error>> {
     // `open` returns a `DynamicImage` on success.
     // let img = image::open("./images/pikachu.png").unwrap();
     // let img = image::open("./images/charizard.png").unwrap();
-    let img = image::open("./images/venusaur.png").unwrap();
+    // let img = image::open("./images/venusaur.png").unwrap();
     // let img = image::open("./images/758.png").unwrap();
     // let img = image::open("./images/magus.jpg").unwrap();
     // let img = image::open("./images/IMG_0383.PNG").unwrap();
     // let img = image::open("./images/portrait-landscape.JPG").unwrap();
-    // let img = image::open("./images/landscape.webp").unwrap();
+    let img = image::open("./images/landscape.webp").unwrap();
     // let img = image::open("./images/horse.JPG").unwrap();
     // let img = image::open("./images/panda-bear.JPG").unwrap();
 
-    let img = pixel_art_image::zealous_crop(&img);
+    // do zealous square crop for images with lots of uneven transparency on edges
+    // for example, pokemon pixel art often has this
+    let img = pixel_art_image::zealous_square_crop(&img);
     pixel_art_image::output(&img, "./output/cropped.png")?;
+    // otherwise, just do the pixelation on original
 
     // draw image to cli
     // pixel_art_image::print(&img);
@@ -29,7 +34,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     let palette_size = palette.len();
 
     let (width, height) = img.dimensions();
-    let output_size = 8;
+    let output_size = 128;
     let grid_scalar = width as f32 / output_size as f32;
     // let grid_size = (width as f32 / output_size as f32).ceil() as u32;
     let grid_size = width / output_size;
@@ -92,7 +97,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 
             let pixel = img.get_pixel(x, y);
 
-            let closest_index = pixel_art_image::closest_rgb(&palette, pixel, debug);
+            let closest_index = pixel_art_image::closest_rgb(&palette, &pixel, debug);
             grid_cell[closest_index] += 1;
 
             if debug {
@@ -111,10 +116,12 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     // println!("[color_counts={:?}]", color_counts);
 
-    let mut pixelated = RgbaImage::new(output_size, output_size);
+    // let mut pixelated = RgbaImage::new(output_size, output_size);
+    let mut pixelated = DynamicImage::new_rgba8(output_size, output_size);
     // https://docs.rs/image/latest/image/struct.ImageBuffer.html
-    for x in 0..pixelated.width() {
-        for y in 0..pixelated.height() {
+
+    for y in 0..pixelated.height() {
+        for x in 0..pixelated.width() {
             let grid_cell = color_counts
                 .get(x as usize)
                 .unwrap()
@@ -136,14 +143,25 @@ fn main() -> Result<(), Box<dyn Error>> {
                 }
             }
 
+            // debugging horse photo at 32x32 with zealous crop
+            // had uneven borders due to square grid cell not aligning with landscape image
+            // if y == 27 {
+            //     println!("({},{}) = {:?}", x, y, grid_cell);
+            // }
+
             // color pixel the palette color of max_index
             if found_max {
-                pixelated.put_pixel(x, y, *palette.get(max_index).unwrap());
+                let pixel = *palette.get(max_index).unwrap();
+                // println!("({},{}) = {:?}", x, y, pixel);
+                pixelated.put_pixel(x, y, pixel);
             }
         }
     }
 
+    // try zealous cropping at this point once we are finished?
     // pixel_art_image::print(&pixelated);
+    // let pixelated = pixel_art_image::zealous_square_crop(&pixelated);
+
     pixel_art_image::output(&pixelated, "./output/pixelated.png")?;
 
     return Ok(());

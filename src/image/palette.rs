@@ -1,12 +1,13 @@
 use std::cmp;
 
 use colored::*;
-use image::{Pixel, Rgba, RgbaImage};
+use image::GenericImageView;
+use image::{DynamicImage, Pixel, Rgba};
 
 static PARTITIONS: u8 = 4;
 static OUTPUT_COLOR_COUNT: usize = 32;
 
-pub fn palette(img: &RgbaImage) -> Vec<Rgba<u8>> {
+pub fn palette(img: &DynamicImage) -> Vec<Rgba<u8>> {
     println!("\n🤖 calculating color_space ...");
 
     let mut color_space: Vec<Vec<Rgba<u8>>> = Vec::new();
@@ -34,7 +35,7 @@ pub fn palette(img: &RgbaImage) -> Vec<Rgba<u8>> {
 
             let pixel = img.get_pixel(x, y);
 
-            if let Some(color_space_index) = get_pixel_index(pixel) {
+            if let Some(color_space_index) = get_pixel_index(&pixel) {
                 used_pixel_count += 1;
 
                 // periodic debug print

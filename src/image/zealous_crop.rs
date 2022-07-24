@@ -2,15 +2,18 @@ use core::fmt::Debug;
 use std::cmp;
 
 use image::DynamicImage;
+use image::GenericImage;
 use image::GenericImageView;
 use image::Pixel;
-use image::RgbaImage;
 
 use crate::image::crop::Crop;
 use crate::image::point::Point;
 use crate::range::range;
 
-pub fn zealous_crop(img: &DynamicImage) -> RgbaImage {
+// crop based on crop, not square (like below)
+// pub fn zealous_crop(img: &DynamicImage) -> DynamicImage {}
+
+pub fn zealous_square_crop(img: &DynamicImage) -> DynamicImage {
     let crop = get_zealous_crop(&img);
 
     println!("\n🤖 output_cropped");
@@ -39,7 +42,7 @@ pub fn zealous_crop(img: &DynamicImage) -> RgbaImage {
 
     // copy source pixels to image buffer and save to view cropped image
 
-    let mut cropped_img = RgbaImage::new(size, size);
+    let mut cropped_img = DynamicImage::new_rgba8(size, size);
     // https://docs.rs/image/latest/image/struct.ImageBuffer.html
     for x in 0..crop.width() {
         for y in 0..crop.height() {
