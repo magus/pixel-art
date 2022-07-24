@@ -11,7 +11,24 @@ use crate::image::point::Point;
 use crate::range::range;
 
 // crop based on crop, not square (like below)
-// pub fn zealous_crop(img: &DynamicImage) -> DynamicImage {}
+pub fn zealous_crop(img: &DynamicImage) -> DynamicImage {
+    let crop = get_zealous_crop(&img);
+
+    let mut cropped_img = DynamicImage::new_rgba8(crop.width(), crop.height());
+
+    // copy source pixels to image buffer and save to view cropped image
+    for x in 0..crop.width() {
+        for y in 0..crop.height() {
+            // println!("pixel({:>3}, {:>3})", crop.left + x, crop.top + y);
+            // grab from source
+            let pixel = img.get_pixel(crop.left + x, crop.top + y);
+            // place into cropped image buffer
+            cropped_img.put_pixel(x, y, pixel);
+        }
+    }
+
+    return cropped_img;
+}
 
 pub fn zealous_square_crop(img: &DynamicImage) -> DynamicImage {
     let crop = get_zealous_crop(&img);

@@ -5,9 +5,12 @@ rust cli to generate pixel art from images
 
 ## TODO
 
-- cleanup logic in `main.rs` into a separate library function
 - profile performance, can we make it faster?
 - parallelize pixel calculations?
+- cleanup logic in `main.rs` into a separate library function
+- cleanup parameters like palette size, color space partitions, etc. into CLI params
+
+
 ## Help
 
 ### `failed to fetch` `no authentication available`

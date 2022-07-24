@@ -14,15 +14,19 @@ fn main() -> Result<(), Box<dyn Error>> {
     // let img = image::open("./images/magus.jpg").unwrap();
     // let img = image::open("./images/IMG_0383.PNG").unwrap();
     // let img = image::open("./images/portrait-landscape.JPG").unwrap();
-    let img = image::open("./images/landscape.webp").unwrap();
-    // let img = image::open("./images/horse.JPG").unwrap();
+    // let img = image::open("./images/landscape.webp").unwrap();
+    let img = image::open("./images/horse.JPG").unwrap();
     // let img = image::open("./images/panda-bear.JPG").unwrap();
 
     // do zealous square crop for images with lots of uneven transparency on edges
     // for example, pokemon pixel art often has this
-    let img = pixel_art_image::zealous_square_crop(&img);
-    pixel_art_image::output(&img, "./output/cropped.png")?;
     // otherwise, just do the pixelation on original
+    let square_crop_pixel_art = false;
+
+    if square_crop_pixel_art {
+        let img = pixel_art_image::zealous_square_crop(&img);
+        pixel_art_image::output(&img, "./output/cropped.png")?;
+    }
 
     // draw image to cli
     // pixel_art_image::print(&img);
@@ -34,7 +38,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     let palette_size = palette.len();
 
     let (width, height) = img.dimensions();
-    let output_size = 128;
+    let output_size = 32;
     let grid_scalar = width as f32 / output_size as f32;
     // let grid_size = (width as f32 / output_size as f32).ceil() as u32;
     let grid_size = width / output_size;
@@ -160,7 +164,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     // try zealous cropping at this point once we are finished?
     // pixel_art_image::print(&pixelated);
-    // let pixelated = pixel_art_image::zealous_square_crop(&pixelated);
+    let pixelated = pixel_art_image::zealous_crop(&pixelated);
 
     pixel_art_image::output(&pixelated, "./output/pixelated.png")?;
 
