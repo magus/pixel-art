@@ -26,40 +26,34 @@ pub fn palette(img: &DynamicImage) -> Vec<Rgba<u8>> {
 
     println!("\nwalking pixels of image ...\n");
 
-    let (width, height) = img.dimensions();
-
     let mut total_pixel_count = 0;
     let mut used_pixel_count = 0;
 
-    for x in 0..width {
-        for y in 0..height {
-            total_pixel_count += 1;
+    for (_x, _y, pixel) in img.pixels() {
+        total_pixel_count += 1;
 
-            let pixel = img.get_pixel(x, y);
+        if let Some(color_space_index) = get_pixel_index(&pixel) {
+            used_pixel_count += 1;
 
-            if let Some(color_space_index) = get_pixel_index(&pixel) {
-                used_pixel_count += 1;
+            // periodic debug print
+            // if x == 0 && y == 0 || total_pixel_count % 574 == 0 {
+            //     println!(
+            //         "   pixel({:>3?},{:>3?}) = {:?} = {:?}",
+            //         x, y, pixel, color_space_index
+            //     );
+            // }
 
-                // periodic debug print
-                // if x == 0 && y == 0 || total_pixel_count % 574 == 0 {
-                //     println!(
-                //         "   pixel({:>3?},{:>3?}) = {:?} = {:?}",
-                //         x, y, pixel, color_space_index
-                //     );
-                // }
+            // println!(
+            //     "   pixel({:>3?},{:>3?}) = {:?} = {:?} / {}",
+            //     x,
+            //     y,
+            //     pixel,
+            //     color_space_index,
+            //     color_space.len()
+            // );
 
-                // println!(
-                //     "   pixel({:>3?},{:>3?}) = {:?} = {:?} / {}",
-                //     x,
-                //     y,
-                //     pixel,
-                //     color_space_index,
-                //     color_space.len()
-                // );
-
-                let space = color_space.get_mut(color_space_index).unwrap();
-                space.push(pixel.clone());
-            }
+            let space = color_space.get_mut(color_space_index).unwrap();
+            space.push(pixel.clone());
         }
     }
 

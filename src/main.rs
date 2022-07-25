@@ -8,6 +8,8 @@ use pixel_art::image as pixel_art_image;
 use pixel_art::time::Stopwatch;
 
 fn main() -> Result<(), Box<dyn Error>> {
+    let debug = false;
+
     let mut stopwatch = Stopwatch::start();
     // Use the open function to load an image from a Path.
     // `open` returns a `DynamicImage` on success.
@@ -31,7 +33,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     let squared_output = false;
 
     let img = pixel_art_image::zealous_crop(&img, squared);
-    pixel_art_image::output(&img, "./output/cropped.png")?;
+    // pixel_art_image::output(&img, "./output/cropped.png")?;
     stopwatch.record("zealous_crop");
 
     // draw image to cli
@@ -46,7 +48,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     let output_size = 32;
     let (width, height) = img.dimensions();
-    println!("  [image = {}×{}]", width, height);
+    println!("   [image = {}×{}]", width, height);
 
     let ratio = width as f32 / height as f32;
     let output_width;
@@ -58,8 +60,8 @@ fn main() -> Result<(), Box<dyn Error>> {
         output_width = output_size;
         output_height = (output_size as f32 / ratio) as u32;
     }
-    println!("  [output = {}×{}]", output_width, output_height);
-    println!("  [ratio = {}]", ratio);
+    println!("   [output = {}×{}]", output_width, output_height);
+    println!("   [ratio = {}]", ratio);
 
     let grid_scalar_width = width as f32 / output_width as f32;
     let grid_scalar_height = height as f32 / output_height as f32;
@@ -67,10 +69,10 @@ fn main() -> Result<(), Box<dyn Error>> {
     let grid_height = height / output_height;
 
     println!(
-        "  [grid_scalar = {}x{}]",
+        "   [grid_scalar = {}x{}]",
         grid_scalar_width, grid_scalar_height
     );
-    println!("  [grid_size = {}×{}]", grid_width, grid_height);
+    println!("   [grid_size = {}×{}]", grid_width, grid_height);
 
     // initialize vector for each palette color for each grid cell
     // e.g. [0, 0, 0] maps to [color_1, color_2, color_3]
@@ -94,58 +96,50 @@ fn main() -> Result<(), Box<dyn Error>> {
     let mut pixelated = DynamicImage::new_rgba8(output_width, output_height);
     stopwatch.record("create_pixelated_buffer");
 
-    for x in 0..width {
-        for y in 0..height {
-            // break up image into windows based on output bit size
-            // e.g. 8x8 pixel art would break image into 8x8 grid
-            // for each grid cell (window), calculate most frequent color
-            // color that cell with that color in final output
+    for (x, y, pixel) in img.pixels() {
+        // break up image into windows based on output bit size
+        // e.g. 8x8 pixel art would break image into 8x8 grid
+        // for each grid cell (window), calculate most frequent color
+        // color that cell with that color in final output
 
-            // let grid_x = x / grid_size;
-            let grid_x = (x as f32 / grid_scalar_width).floor() as u32;
-            // let grid_y = y / grid_size;
-            let grid_y = (y as f32 / grid_scalar_height).floor() as u32;
+        let grid_x = (x as f32 / grid_scalar_width).floor() as u32;
+        let grid_y = (y as f32 / grid_scalar_height).floor() as u32;
 
-            // keep grid within output_size
-            let grid_x = if grid_x >= output_size {
-                output_size - 1
-            } else {
-                grid_x
-            };
+        // keep grid within output_size
+        let grid_x = if grid_x >= output_size {
+            output_size - 1
+        } else {
+            grid_x
+        };
 
-            let grid_y = if grid_y >= output_size {
-                output_size - 1
-            } else {
-                grid_y
-            };
+        let grid_y = if grid_y >= output_size {
+            output_size - 1
+        } else {
+            grid_y
+        };
 
-            let debug = false;
-            // let debug = grid_x == 3 && grid_y == 3;
+        let grid_cell = color_counts
+            .get_mut(grid_x as usize)
+            .unwrap()
+            .get_mut(grid_y as usize)
+            .unwrap();
 
-            let grid_cell = color_counts
-                .get_mut(grid_x as usize)
-                .unwrap()
-                .get_mut(grid_y as usize)
-                .unwrap();
+        let closest_index = pixel_art_image::closest_rgb(&palette, &pixel, debug);
+        grid_cell[closest_index] += 1;
 
-            let pixel = img.get_pixel(x, y);
-
-            let closest_index = pixel_art_image::closest_rgb(&palette, &pixel, debug);
-            grid_cell[closest_index] += 1;
-
-            if debug {
-                println!(
-                    "[{},{}] ({},{}) = {:?} [closest_index = {}]",
-                    grid_x, grid_y, x, y, pixel, closest_index
-                )
-            }
-
-            // println!(
-            //     "({},{})=({},{}) [closest_index={}] {:?}",
-            //     x, y, grid_x, grid_y, closest_index, grid_cell
-            // );
+        if debug {
+            println!(
+                "[{},{}] ({},{}) = {:?} [closest_index = {}]",
+                grid_x, grid_y, x, y, pixel, closest_index
+            )
         }
+
+        // println!(
+        //     "({},{})=({},{}) [closest_index={}] {:?}",
+        //     x, y, grid_x, grid_y, closest_index, grid_cell
+        // );
     }
+
     stopwatch.record("calcuate_pixelated_grid_cells");
 
     // println!("[color_counts={:?}]", color_counts);
