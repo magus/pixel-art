@@ -1,10 +1,14 @@
+use std::error::Error;
+
 use image::DynamicImage;
 use image::GenericImage;
 use image::GenericImageView;
+
 use pixel_art::image as pixel_art_image;
-use std::error::Error;
+use pixel_art::time::Stopwatch;
 
 fn main() -> Result<(), Box<dyn Error>> {
+    let mut stopwatch = Stopwatch::start();
     // Use the open function to load an image from a Path.
     // `open` returns a `DynamicImage` on success.
     // let img = image::open("./images/pikachu.png").unwrap();
@@ -18,6 +22,8 @@ fn main() -> Result<(), Box<dyn Error>> {
     let img = image::open("./images/horse.JPG").unwrap();
     // let img = image::open("./images/panda-bear.JPG").unwrap();
 
+    stopwatch.record("reading_image");
+
     // do zealous square crop for images with lots of uneven transparency on edges
     // for example, pokemon pixel art often has this
     // otherwise, just do the pixelation on original
@@ -26,11 +32,13 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     let img = pixel_art_image::zealous_crop(&img, squared);
     pixel_art_image::output(&img, "./output/cropped.png")?;
+    stopwatch.record("zealous_crop");
 
     // draw image to cli
     // pixel_art_image::print(&img);
 
     let palette = pixel_art_image::palette(&img);
+    stopwatch.record("palette");
 
     println!("\n🤖 pixelate\n");
 
@@ -79,10 +87,12 @@ fn main() -> Result<(), Box<dyn Error>> {
 
         color_counts.push(row);
     }
+    stopwatch.record("initialize_color_counts");
 
     // println!("[color_counts={:?}]", color_counts);
 
     let mut pixelated = DynamicImage::new_rgba8(output_width, output_height);
+    stopwatch.record("create_pixelated_buffer");
 
     for x in 0..width {
         for y in 0..height {
@@ -136,6 +146,7 @@ fn main() -> Result<(), Box<dyn Error>> {
             // );
         }
     }
+    stopwatch.record("calcuate_pixelated_grid_cells");
 
     // println!("[color_counts={:?}]", color_counts);
 
@@ -180,6 +191,8 @@ fn main() -> Result<(), Box<dyn Error>> {
         }
     }
 
+    stopwatch.record("put_pixel_pixelated");
+
     // try zealous cropping at this point once we are finished?
     // pixel_art_image::print(&pixelated);
     if squared_output {
@@ -187,6 +200,9 @@ fn main() -> Result<(), Box<dyn Error>> {
     }
 
     pixel_art_image::output(&pixelated, "./output/pixelated.png")?;
+    stopwatch.record("output_pixelated");
+
+    stopwatch.all();
 
     return Ok(());
 }
