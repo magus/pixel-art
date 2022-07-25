@@ -12,6 +12,13 @@ rust cli to generate pixel art from images
 - visual regression testing against test images under `images/` would be cool
 
 
+## Profiling
+
+```
+cargo install flamegraph
+flamegraph --root -- target/debug/pixel-art
+```
+
 ## Help
 
 ### `failed to fetch` `no authentication available`
