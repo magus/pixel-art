@@ -4,6 +4,8 @@ use image::DynamicImage;
 use image::GenericImage;
 use image::GenericImageView;
 
+use rayon::prelude::*;
+
 use pixel_art::image as pixel_art_image;
 use pixel_art::time::Stopwatch;
 
@@ -21,8 +23,8 @@ fn main() -> Result<(), Box<dyn Error>> {
     // let img = image::open("./images/IMG_0383.PNG").unwrap();
     // let img = image::open("./images/portrait-landscape.JPG").unwrap();
     // let img = image::open("./images/landscape.webp").unwrap();
-    let img = image::open("./images/horse.JPG").unwrap();
-    // let img = image::open("./images/panda-bear.JPG").unwrap();
+    // let img = image::open("./images/horse.JPG").unwrap();
+    let img = image::open("./images/panda-bear.JPG").unwrap();
 
     stopwatch.record("reading_image");
 
@@ -79,15 +81,15 @@ fn main() -> Result<(), Box<dyn Error>> {
     // we will increment the value at idnex when a pixel is closest to a particular color
     // end result will allow us to determine most representative palette color for a grid cell
     let mut color_counts = vec![];
-    for _ in 0..output_size {
-        let mut row = vec![];
+    for _ in 0..output_width {
+        let mut column = vec![];
 
-        for _ in 0..output_size {
+        for _ in 0..output_height {
             let colors = vec![0; palette_size];
-            row.push(colors);
+            column.push(colors);
         }
 
-        color_counts.push(row);
+        color_counts.push(column);
     }
     stopwatch.record("initialize_color_counts");
 
@@ -96,49 +98,38 @@ fn main() -> Result<(), Box<dyn Error>> {
     let mut pixelated = DynamicImage::new_rgba8(output_width, output_height);
     stopwatch.record("create_pixelated_buffer");
 
-    for (x, y, pixel) in img.pixels() {
-        // break up image into windows based on output bit size
-        // e.g. 8x8 pixel art would break image into 8x8 grid
-        // for each grid cell (window), calculate most frequent color
-        // color that cell with that color in final output
+    color_counts
+        .par_iter_mut()
+        .enumerate()
+        .for_each(|(grid_x, grid_column)| {
+            grid_column
+                .par_iter_mut()
+                .enumerate()
+                .for_each(|(grid_y, grid_cell)| {
+                    let x_start = (grid_x as f32 * grid_scalar_width).floor() as u32;
+                    let y_start = (grid_y as f32 * grid_scalar_height).floor() as u32;
+                    let x_end = x_start + grid_width;
+                    let y_end = y_start + grid_height;
 
-        let grid_x = (x as f32 / grid_scalar_width).floor() as u32;
-        let grid_y = (y as f32 / grid_scalar_height).floor() as u32;
+                    for x in x_start..x_end {
+                        for y in y_start..y_end {
+                            let pixel = img.get_pixel(x, y);
+                            // println!("({},{}) = {:?}", x, y, pixel);
 
-        // keep grid within output_size
-        let grid_x = if grid_x >= output_size {
-            output_size - 1
-        } else {
-            grid_x
-        };
+                            let closest_index =
+                                pixel_art_image::closest_rgb(&palette, &pixel, debug);
+                            grid_cell[closest_index] += 1;
 
-        let grid_y = if grid_y >= output_size {
-            output_size - 1
-        } else {
-            grid_y
-        };
-
-        let grid_cell = color_counts
-            .get_mut(grid_x as usize)
-            .unwrap()
-            .get_mut(grid_y as usize)
-            .unwrap();
-
-        let closest_index = pixel_art_image::closest_rgb(&palette, &pixel, debug);
-        grid_cell[closest_index] += 1;
-
-        if debug {
-            println!(
-                "[{},{}] ({},{}) = {:?} [closest_index = {}]",
-                grid_x, grid_y, x, y, pixel, closest_index
-            )
-        }
-
-        // println!(
-        //     "({},{})=({},{}) [closest_index={}] {:?}",
-        //     x, y, grid_x, grid_y, closest_index, grid_cell
-        // );
-    }
+                            if debug {
+                                println!(
+                                    "[{},{}] ({},{}) = {:?} [closest_index = {}]",
+                                    grid_x, grid_y, x, y, pixel, closest_index
+                                )
+                            }
+                        }
+                    }
+                });
+        });
 
     stopwatch.record("calcuate_pixelated_grid_cells");
 
