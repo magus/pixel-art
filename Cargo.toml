@@ -5,8 +5,15 @@ edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
+# optimizing for speed
+# https://docs.rust-embedded.org/book/unsorted/speed-vs-size.html#optimize-for-speed
+[profile.release]
+opt-level = 3     # optimize for size
+lto = true        # instructs the linker to optimize at the link stage
+
 # # tips to minimize the size of a rust binary
 # # https://github.com/johnthagen/min-sized-rust
+# # https://docs.rust-embedded.org/book/unsorted/speed-vs-size.html#optimize-for-size
 # [profile.release]
 # strip = true      # automatically strip symbols from the binary
 # opt-level = "z"   # optimize for size
