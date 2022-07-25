@@ -37,15 +37,36 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     let palette_size = palette.len();
 
+    let output_size = 256;
     let (width, height) = img.dimensions();
-    let output_size = 32;
-    let grid_scalar = width as f32 / output_size as f32;
-    // let grid_size = (width as f32 / output_size as f32).ceil() as u32;
-    let grid_size = width / output_size;
-
     println!("  [output_size={}]", output_size);
-    println!("  [grid_scalar={}]", grid_scalar);
-    println!("  [grid_size={}]", grid_size);
+    println!("  [image={}×{}]", width, height);
+
+    let ratio = width as f32 / height as f32;
+    let output_width;
+    let output_height;
+    if height > width {
+        output_width = (output_size as f32 * ratio) as u32;
+        output_height = output_size;
+    } else {
+        output_width = output_size;
+        output_height = (output_size as f32 / ratio) as u32;
+    }
+    println!(
+        "  [output][ratio={}][{}x{}]",
+        ratio, output_width, output_height
+    );
+
+    let grid_scalar_width = width as f32 / output_width as f32;
+    let grid_scalar_height = height as f32 / output_height as f32;
+    let grid_width = width / output_width;
+    let grid_height = height / output_height;
+
+    println!(
+        "  [grid_scalar={}x{}]",
+        grid_scalar_width, grid_scalar_height
+    );
+    println!("  [grid_size={}×{}]", grid_width, grid_height);
 
     // initialize vector for each palette color for each grid cell
     // e.g. [0, 0, 0] maps to [color_1, color_2, color_3]
@@ -65,6 +86,8 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     // println!("[color_counts={:?}]", color_counts);
 
+    let mut pixelated = DynamicImage::new_rgba8(output_width, output_height);
+
     for x in 0..width {
         for y in 0..height {
             // break up image into windows based on output bit size
@@ -73,9 +96,9 @@ fn main() -> Result<(), Box<dyn Error>> {
             // color that cell with that color in final output
 
             // let grid_x = x / grid_size;
-            let grid_x = (x as f32 / grid_scalar).floor() as u32;
+            let grid_x = (x as f32 / grid_scalar_width).floor() as u32;
             // let grid_y = y / grid_size;
-            let grid_y = (y as f32 / grid_scalar).floor() as u32;
+            let grid_y = (y as f32 / grid_scalar_height).floor() as u32;
 
             // keep grid within output_size
             let grid_x = if grid_x >= output_size {
@@ -120,9 +143,8 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     // println!("[color_counts={:?}]", color_counts);
 
+    // let mut pixelated = DynamicImage::new_rgba8(output_size, output_size);
     // let mut pixelated = RgbaImage::new(output_size, output_size);
-    let mut pixelated = DynamicImage::new_rgba8(output_size, output_size);
-    // https://docs.rs/image/latest/image/struct.ImageBuffer.html
 
     for y in 0..pixelated.height() {
         for x in 0..pixelated.width() {
@@ -164,7 +186,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     // try zealous cropping at this point once we are finished?
     // pixel_art_image::print(&pixelated);
-    let pixelated = pixel_art_image::zealous_crop(&pixelated);
+    // let pixelated = pixel_art_image::zealous_crop(&pixelated);
 
     pixel_art_image::output(&pixelated, "./output/pixelated.png")?;
 
