@@ -16,4 +16,3 @@ pub use self::output::output;
 pub use self::palette::palette;
 pub use self::print::print;
 pub use self::zealous_crop::zealous_crop;
-pub use self::zealous_crop::zealous_square_crop;

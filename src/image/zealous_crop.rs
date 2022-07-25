@@ -10,27 +10,8 @@ use crate::image::crop::Crop;
 use crate::image::point::Point;
 use crate::range::range;
 
-// crop based on crop, not square (like below)
-pub fn zealous_crop(img: &DynamicImage) -> DynamicImage {
-    let crop = get_zealous_crop(&img);
-
-    let mut cropped_img = DynamicImage::new_rgba8(crop.width(), crop.height());
-
-    // copy source pixels to image buffer and save to view cropped image
-    for x in 0..crop.width() {
-        for y in 0..crop.height() {
-            // println!("pixel({:>3}, {:>3})", crop.left + x, crop.top + y);
-            // grab from source
-            let pixel = img.get_pixel(crop.left + x, crop.top + y);
-            // place into cropped image buffer
-            cropped_img.put_pixel(x, y, pixel);
-        }
-    }
-
-    return cropped_img;
-}
-
-pub fn zealous_square_crop(img: &DynamicImage) -> DynamicImage {
+// squared will output the crop into a square, centering content
+pub fn zealous_crop(img: &DynamicImage, squared: bool) -> DynamicImage {
     let crop = get_zealous_crop(&img);
 
     println!("\n🤖 output_cropped");
@@ -39,28 +20,39 @@ pub fn zealous_square_crop(img: &DynamicImage) -> DynamicImage {
 
     let mut x_start = 0;
     let mut y_start = 0;
-    let size = cmp::max(crop.width(), crop.height());
-    let delta = crop.width().abs_diff(crop.height());
+    let mut width = crop.width();
+    let mut height = crop.height();
 
-    if crop.width() > crop.height() {
-        y_start += delta / 2;
-        println!("   wider by {}px", delta);
-    } else {
-        x_start += delta / 2;
-        println!("   taller by {}px", delta);
+    let (img_width, img_height) = img.dimensions();
+    print_crop("width", width, img_width);
+    print_crop("height", height, img_height);
+
+    if squared {
+        let delta = width.abs_diff(height);
+
+        if width > height {
+            y_start += delta / 2;
+            println!("   wider by {}px", delta);
+        } else {
+            x_start += delta / 2;
+            println!("   taller by {}px", delta);
+        }
+
+        println!(
+            "   [squared] crop copy start @ ({:>3}, {:>3})",
+            x_start, y_start
+        );
+
+        let size = cmp::max(width, height);
+        width = size;
+        height = size;
     }
 
-    println!(
-        "   output size {:>3}x{:<3} ; crop copy start @ ({:>3}, {:>3})",
-        size, size, x_start, y_start
-    );
-
-    print_crop(size, img.dimensions().0);
+    println!("   [zealous_crop][{:>3}×{:<3}]", width, height,);
 
     // copy source pixels to image buffer and save to view cropped image
+    let mut cropped_img = DynamicImage::new_rgba8(width, height);
 
-    let mut cropped_img = DynamicImage::new_rgba8(size, size);
-    // https://docs.rs/image/latest/image/struct.ImageBuffer.html
     for x in 0..crop.width() {
         for y in 0..crop.height() {
             // println!("pixel({:>3}, {:>3})", crop.left + x, crop.top + y);
@@ -74,12 +66,12 @@ pub fn zealous_square_crop(img: &DynamicImage) -> DynamicImage {
     return cropped_img;
 }
 
-fn print_crop(crop_size: u32, original_size: u32) {
+fn print_crop(kind: &str, crop_size: u32, original_size: u32) {
     let reduction_percent = (1.0 - (crop_size as f32 / original_size as f32)) * 100.0;
 
     println!(
-        "   cropped {:>3}px -> {:>3}px ({:.2}% size reduction)",
-        original_size, crop_size, reduction_percent
+        "   [cropped:{}] {:>3}px -> {:>3}px ({:.2}% size reduction)",
+        kind, original_size, crop_size, reduction_percent
     );
 }
 

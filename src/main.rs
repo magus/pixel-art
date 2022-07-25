@@ -21,12 +21,10 @@ fn main() -> Result<(), Box<dyn Error>> {
     // do zealous square crop for images with lots of uneven transparency on edges
     // for example, pokemon pixel art often has this
     // otherwise, just do the pixelation on original
-    let square_crop_pixel_art = false;
+    let squared = false;
 
-    if square_crop_pixel_art {
-        let img = pixel_art_image::zealous_square_crop(&img);
-        pixel_art_image::output(&img, "./output/cropped.png")?;
-    }
+    let img = pixel_art_image::zealous_crop(&img, squared);
+    pixel_art_image::output(&img, "./output/cropped.png")?;
 
     // draw image to cli
     // pixel_art_image::print(&img);
@@ -37,7 +35,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     let palette_size = palette.len();
 
-    let output_size = 256;
+    let output_size = 32;
     let (width, height) = img.dimensions();
     println!("  [output_size={}]", output_size);
     println!("  [image={}×{}]", width, height);
@@ -186,7 +184,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     // try zealous cropping at this point once we are finished?
     // pixel_art_image::print(&pixelated);
-    // let pixelated = pixel_art_image::zealous_crop(&pixelated);
+    // let pixelated = pixel_art_image::zealous_crop(&pixelated, false);
 
     pixel_art_image::output(&pixelated, "./output/pixelated.png")?;
 
