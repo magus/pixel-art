@@ -9,6 +9,7 @@ rust cli to generate pixel art from images
 - parallelize pixel calculations?
 - cleanup logic in `main.rs` into a separate library function
 - cleanup parameters like palette size, color space partitions, etc. into CLI params
+- visual regression testing against test images under `images/` would be cool
 
 
 ## Help
