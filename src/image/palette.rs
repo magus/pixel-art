@@ -4,7 +4,9 @@ use colored::*;
 use image::GenericImageView;
 use image::{DynamicImage, Pixel, Rgba};
 
-static PARTITIONS: u8 = 4;
+// use usize (not u8) to be able to hold the cubed result
+// e.g. 8^3 = 512 > u8::MAX
+static PARTITIONS: usize = 3;
 static OUTPUT_COLOR_COUNT: usize = 32;
 
 pub fn palette(img: &DynamicImage) -> Vec<Rgba<u8>> {
@@ -120,9 +122,11 @@ fn partition_len() -> u8 {
     (u8::MAX as f32 / PARTITIONS as f32).ceil() as u8
 }
 
-fn get_index(r: u8, g: u8, b: u8) -> u8 {
+fn get_index(r: u8, g: u8, b: u8) -> usize {
     // println!("{},{},{}", r, g, b);
-    return (r * PARTITIONS.pow(0)) + (g * PARTITIONS.pow(1)) + (b * PARTITIONS.pow(2));
+    return (r as usize * PARTITIONS.pow(0))
+        + (g as usize * PARTITIONS.pow(1))
+        + (b as usize * PARTITIONS.pow(2));
 }
 
 fn get_pixel_index(pixel: &Rgba<u8>) -> Option<usize> {
