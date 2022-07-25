@@ -22,6 +22,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     // for example, pokemon pixel art often has this
     // otherwise, just do the pixelation on original
     let squared = false;
+    let squared_output = false;
 
     let img = pixel_art_image::zealous_crop(&img, squared);
     pixel_art_image::output(&img, "./output/cropped.png")?;
@@ -184,7 +185,9 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     // try zealous cropping at this point once we are finished?
     // pixel_art_image::print(&pixelated);
-    // let pixelated = pixel_art_image::zealous_crop(&pixelated, false);
+    if squared_output {
+        pixelated = pixel_art_image::zealous_crop(&pixelated, true);
+    }
 
     pixel_art_image::output(&pixelated, "./output/pixelated.png")?;
 
