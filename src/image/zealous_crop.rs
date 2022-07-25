@@ -39,7 +39,7 @@ pub fn zealous_crop(img: &DynamicImage, squared: bool) -> DynamicImage {
         }
 
         println!(
-            "   [squared] crop copy start @ ({:>3}, {:>3})",
+            "   [squared] crop copy start @ ({:>3},{:>3})",
             x_start, y_start
         );
 
@@ -48,7 +48,7 @@ pub fn zealous_crop(img: &DynamicImage, squared: bool) -> DynamicImage {
         height = size;
     }
 
-    println!("   [zealous_crop][{:>3}×{:<3}]", width, height,);
+    println!("   [zealous_crop = {:>3}×{:<3}]", width, height,);
 
     // copy source pixels to image buffer and save to view cropped image
     let mut cropped_img = DynamicImage::new_rgba8(width, height);
@@ -100,7 +100,7 @@ pub fn get_zealous_crop(img: &DynamicImage) -> Crop {
 }
 
 fn scan_edge(img: &DynamicImage, scan: Scan, test: fn(&DynamicImage, Point) -> bool) -> u32 {
-    println!("\nscan_edge [scan=[{:?}]", scan);
+    println!("\nscan_edge [scan = [{:?}]", scan);
 
     let (width, height) = img.dimensions();
 
@@ -112,7 +112,7 @@ fn scan_edge(img: &DynamicImage, scan: Scan, test: fn(&DynamicImage, Point) -> b
     };
 
     println!(
-        "   matched [range_a={:?}..{:?}] [range_b={:?}..{:?}]",
+        "   matched [range_a = {:?}..{:?}] [range_b = {:?}..{:?}]",
         range_a_start, range_a_end, range_b_start, range_b_end
     );
 
@@ -125,7 +125,7 @@ fn scan_edge(img: &DynamicImage, scan: Scan, test: fn(&DynamicImage, Point) -> b
             };
 
             if test(img, Point { x, y }) {
-                println!("   returning [a={:?}] @ ({:>3?}, {:>3?})", a, x, y);
+                println!("   returning [a = {:?}] @ ({:>3?},{:>3?})", a, x, y);
                 return a;
             }
         }

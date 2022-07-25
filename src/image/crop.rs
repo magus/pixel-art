@@ -25,6 +25,6 @@ impl fmt::Display for Crop {
         // stream: `f`. Returns `fmt::Result` which indicates whether the
         // operation succeeded or failed. Note that `write!` uses syntax which
         // is very similar to `println!`.
-        write!(f, "[{}x{}] {:?} ", self.width(), self.height(), self)
+        write!(f, "[{}×{}] {:?} ", self.width(), self.height(), self)
     }
 }

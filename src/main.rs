@@ -38,8 +38,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     let output_size = 32;
     let (width, height) = img.dimensions();
-    println!("  [output_size={}]", output_size);
-    println!("  [image={}×{}]", width, height);
+    println!("  [image = {}×{}]", width, height);
 
     let ratio = width as f32 / height as f32;
     let output_width;
@@ -51,10 +50,8 @@ fn main() -> Result<(), Box<dyn Error>> {
         output_width = output_size;
         output_height = (output_size as f32 / ratio) as u32;
     }
-    println!(
-        "  [output][ratio={}][{}x{}]",
-        ratio, output_width, output_height
-    );
+    println!("  [output = {}×{}]", output_width, output_height);
+    println!("  [ratio = {}]", ratio);
 
     let grid_scalar_width = width as f32 / output_width as f32;
     let grid_scalar_height = height as f32 / output_height as f32;
@@ -62,10 +59,10 @@ fn main() -> Result<(), Box<dyn Error>> {
     let grid_height = height / output_height;
 
     println!(
-        "  [grid_scalar={}x{}]",
+        "  [grid_scalar = {}x{}]",
         grid_scalar_width, grid_scalar_height
     );
-    println!("  [grid_size={}×{}]", grid_width, grid_height);
+    println!("  [grid_size = {}×{}]", grid_width, grid_height);
 
     // initialize vector for each palette color for each grid cell
     // e.g. [0, 0, 0] maps to [color_1, color_2, color_3]
@@ -128,7 +125,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 
             if debug {
                 println!(
-                    "[{},{}]({},{})={:?} [closest_index={}]",
+                    "[{},{}] ({},{}) = {:?} [closest_index = {}]",
                     grid_x, grid_y, x, y, pixel, closest_index
                 )
             }

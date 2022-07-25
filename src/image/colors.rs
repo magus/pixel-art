@@ -9,7 +9,7 @@ pub fn closest_rgb(color_list: &Vec<Rgba<u8>>, pixel: &Rgba<u8>, debug: bool) ->
 
         if debug {
             println!(
-                "closest_rgb -- [{:?}][closest_diff={}] {:?} v {:?} [color_diff={}]",
+                "closest_rgb -- [{:?}][closest_diff = {}] {:?} v {:?} [color_diff = {}]",
                 color_list.get(closest_index).unwrap(),
                 closest_diff,
                 &color_list.get(color_index).unwrap(),
