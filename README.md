@@ -95,10 +95,9 @@ The size must produce nonzero dimensions no larger than the input. Without
 options, the original panda input, output path, and 32-pixel longest edge remain
 the defaults. Run with `--help` for usage.
 
-The pixelation and palette algorithms are unchanged. The palette defaults to
-the original three partitions per RGB channel and nominal 32-color limit. That
-produces at most 27 RGB buckets, plus transparency, and can produce fewer
-distinct colors.
+The palette defaults to three partitions per RGB channel and a 32-color limit.
+That produces at most 27 occupied RGB buckets, plus transparency, and can produce
+fewer distinct colors.
 
 Use `--colors` to cap the RGB palette at 1–256 entries and `--partitions` to set
 1–32 buckets per RGB channel. For example:
@@ -109,10 +108,19 @@ cargo run --release -- --input input.png --output output/32-colors.png --size 32
 
 For a color-count comparison, hold `--partitions 16` and the input and size
 constant while varying `--colors`. A finer partition setting supplies more
-candidate colors, including for 64- and 128-color palettes. The algorithm still
-averages each bucket, selects the most populated buckets, and chooses the most
-frequent palette match in each output cell. The requested color count is a cap;
-an image may use fewer colors. Transparency is an additional palette entry.
+candidate colors, including for 64- and 128-color palettes. The algorithm groups
+source colors into buckets, then repeatedly merges the pair that adds the least
+total squared RGB error until the palette fits the color limit. Merged colors
+use the pixel counts as weights. All occupied buckets contribute to the result,
+and empty buckets are ignored.
+
+The pair search is deliberately simple: it checks every remaining pair after
+each merge. Runtime grows roughly with the cube of the occupied bucket count,
+so high partition settings can be slow on images with many colors.
+
+The pixel rendering is unchanged: each output cell uses its most frequent
+palette match. The requested color count is a cap; an image may use fewer
+colors. Transparency is an additional palette entry.
 
 Release mode applies many LLVM optimizations, `cargo run` is a very poor indicator of final performance
 

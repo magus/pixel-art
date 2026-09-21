@@ -1,20 +1,51 @@
-use std::cmp;
-
 use colored::*;
 use image::GenericImageView;
-use image::{DynamicImage, Pixel, Rgba};
+use image::{DynamicImage, Rgba};
 
-// use usize (not u8) to be able to hold the cubed result
-// e.g. 8^3 = 512 > u8::MAX
-static PARTITIONS: usize = 3;
-static OUTPUT_COLOR_COUNT: usize = 32;
+const PARTITIONS: usize = 3;
+const OUTPUT_COLOR_COUNT: usize = 32;
+
+#[derive(Clone, Default)]
+struct ColorBucket {
+    pixel_count: u64,
+    channel_totals: [u64; 3],
+}
+
+impl ColorBucket {
+    fn add_pixel(&mut self, pixel: Rgba<u8>) {
+        self.pixel_count += 1;
+
+        for channel in 0..3 {
+            self.channel_totals[channel] += u64::from(pixel[channel]);
+        }
+    }
+
+    fn mean(&self) -> [f64; 3] {
+        self.channel_totals
+            .map(|total| total as f64 / self.pixel_count as f64)
+    }
+
+    fn merge(&mut self, other: Self) {
+        self.pixel_count += other.pixel_count;
+
+        for channel in 0..3 {
+            self.channel_totals[channel] += other.channel_totals[channel];
+        }
+    }
+
+    fn color(&self) -> Rgba<u8> {
+        let [red, green, blue] = self.mean().map(|channel| channel as u8);
+
+        Rgba([red, green, blue, 255])
+    }
+}
 
 pub fn palette(img: &DynamicImage) -> Vec<Rgba<u8>> {
     palette_with_options(img, OUTPUT_COLOR_COUNT, PARTITIONS)
 }
 
-/// Build the original bucket-averaged palette with configurable limits.
-/// The color count caps RGB entries; transparency is appended separately.
+/// Merge RGB buckets until the palette fits the requested color limit.
+/// The limit applies to opaque colors; transparency is appended separately.
 pub fn palette_with_options(
     img: &DynamicImage,
     output_color_count: usize,
@@ -22,165 +53,187 @@ pub fn palette_with_options(
 ) -> Vec<Rgba<u8>> {
     assert!((1..=256).contains(&output_color_count));
     assert!((1..=32).contains(&partitions));
-    println!("\n🤖 calculating color_space ...");
 
-    let mut color_space: Vec<Vec<Rgba<u8>>> = Vec::new();
+    let mut buckets = vec![ColorBucket::default(); partitions.pow(3)];
 
-    // PARTITIONS^3 for each value in rgb
-    // equivalent to 3 nested for loops
-    // e.g.
-    //   for r in 0..PARTITIONS {
-    //     for g in 0..PARTITIONS {
-    //         for b in 0..PARTITIONS {
-    for _ in 0..partitions.pow(3) {
-        color_space.push(Vec::new());
-    }
-
-    println!("\nwalking pixels of image ...\n");
-
-    let mut total_pixel_count = 0;
-    let mut used_pixel_count = 0;
-
-    for (_x, _y, pixel) in img.pixels() {
-        total_pixel_count += 1;
-
-        if let Some(color_space_index) = get_pixel_index(&pixel, partitions) {
-            used_pixel_count += 1;
-
-            // periodic debug print
-            // if x == 0 && y == 0 || total_pixel_count % 574 == 0 {
-            //     println!(
-            //         "   pixel({:>3?},{:>3?}) = {:?} = {:?}",
-            //         x, y, pixel, color_space_index
-            //     );
-            // }
-
-            // println!(
-            //     "   pixel({:>3?},{:>3?}) = {:?} = {:?} / {}",
-            //     x,
-            //     y,
-            //     pixel,
-            //     color_space_index,
-            //     color_space.len()
-            // );
-
-            let space = color_space.get_mut(color_space_index).unwrap();
-            space.push(pixel.clone());
-        }
-    }
-
-    println!("\n   color_space[{}]\n", color_space.len());
-    println!(
-        "   {:.2}% used pixel density ({:?}/{:?})",
-        percent(used_pixel_count, total_pixel_count),
-        used_pixel_count,
-        total_pixel_count,
-    );
-    println!();
-
-    // sort by number of pixels in each partition
-    color_space.sort_by(|a, b| b.len().cmp(&a.len()));
-
-    let output_count = cmp::min(output_color_count, color_space.len());
-    let mut output = vec![];
-
-    println!("\n🤖 palette\n");
-
-    for i in 0..output_count {
-        let space = color_space.get(i).unwrap();
-
-        let space_pixel_count = space.len() as u32;
-        let (mut red, mut green, mut blue) = (0_u32, 0_u32, 0_u32);
-
-        for pixel in space {
-            if let [r, g, b, _] = pixel.channels() {
-                red += *r as u32;
-                green += *g as u32;
-                blue += *b as u32;
-            }
+    for (_, _, pixel) in img.pixels() {
+        if pixel[3] == 0 {
+            continue;
         }
 
-        let (a_red, a_green, a_blue) = (
-            average_color(red, space_pixel_count),
-            average_color(green, space_pixel_count),
-            average_color(blue, space_pixel_count),
-        );
+        let index = bucket_index(pixel, partitions);
+        buckets[index].add_pixel(pixel);
+    }
 
-        let average_pixel = Rgba([a_red, a_green, a_blue, 255]);
+    buckets.retain(|bucket| bucket.pixel_count > 0);
+    println!("\nMerging {} occupied color buckets...", buckets.len());
+
+    merge_buckets(&mut buckets, output_color_count);
+    buckets.sort_by(|left, right| right.pixel_count.cmp(&left.pixel_count));
+
+    let mut output = Vec::with_capacity(buckets.len() + 1);
+
+    for (index, bucket) in buckets.iter().enumerate() {
+        let color = bucket.color();
+        let [red, green, blue, _] = color.0;
 
         println!(
             "  space[{:>3}] [{:>8} pixels] {} {:?}",
-            i,
-            space.len(),
-            "     ".on_truecolor(a_red, a_green, a_blue),
-            average_pixel,
+            index,
+            bucket.pixel_count,
+            "     ".on_truecolor(red, green, blue),
+            color,
         );
 
-        output.push(average_pixel.clone());
+        output.push(color);
     }
 
-    output.push(Rgba::from([0, 0, 0, 0]));
+    output.push(Rgba([0, 0, 0, 0]));
 
-    return output;
+    output
 }
 
-fn partition_len(partitions: usize) -> u8 {
-    (u8::MAX as f32 / partitions as f32).ceil() as u8
-}
+fn merge_buckets(buckets: &mut Vec<ColorBucket>, color_limit: usize) {
+    while buckets.len() > color_limit {
+        let means: Vec<_> = buckets.iter().map(ColorBucket::mean).collect();
+        let mut best_pair = (0, 1);
+        let mut lowest_cost = f64::INFINITY;
 
-fn get_index(r: u8, g: u8, b: u8, partitions: usize) -> usize {
-    // println!("{},{},{}", r, g, b);
-    return (r as usize * partitions.pow(0))
-        + (g as usize * partitions.pow(1))
-        + (b as usize * partitions.pow(2));
-}
+        for left in 0..buckets.len() {
+            for right in left + 1..buckets.len() {
+                let cost = merge_cost(
+                    means[left],
+                    buckets[left].pixel_count,
+                    means[right],
+                    buckets[right].pixel_count,
+                );
 
-fn get_pixel_index(pixel: &Rgba<u8>, partitions: usize) -> Option<usize> {
-    if let [r, g, b, alpha] = pixel.channels() {
-        if *alpha == 0 {
-            return None;
+                if cost < lowest_cost {
+                    lowest_cost = cost;
+                    best_pair = (left, right);
+                }
+            }
         }
 
-        let index = get_index(
-            // force line break
-            get_partition(r, partitions),
-            get_partition(g, partitions),
-            get_partition(b, partitions),
-            partitions,
+        let (left, right) = best_pair;
+        let other = buckets.remove(right);
+        buckets[left].merge(other);
+    }
+}
+
+fn merge_cost(left: [f64; 3], left_count: u64, right: [f64; 3], right_count: u64) -> f64 {
+    let mut squared_distance = 0.0;
+
+    for channel in 0..3 {
+        let difference = left[channel] - right[channel];
+        squared_distance += difference * difference;
+    }
+
+    // This is the increase in total squared RGB error after a weighted merge.
+    let left_count = left_count as f64;
+    let right_count = right_count as f64;
+    let weight = left_count * right_count / (left_count + right_count);
+
+    weight * squared_distance
+}
+
+fn bucket_index(pixel: Rgba<u8>, partitions: usize) -> usize {
+    let partition_width = (255.0 / partitions as f64).ceil() as usize;
+    let red = usize::from(pixel[0].min(254)) / partition_width;
+    let green = usize::from(pixel[1].min(254)) / partition_width;
+    let blue = usize::from(pixel[2].min(254)) / partition_width;
+
+    red + green * partitions + blue * partitions.pow(2)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use image::RgbaImage;
+
+    fn sample_image(samples: &[(u32, [u8; 4])]) -> DynamicImage {
+        let width = samples.iter().map(|(count, _)| count).sum();
+        let mut image = RgbaImage::new(width, 1);
+        let mut x = 0;
+
+        for &(count, color) in samples {
+            for _ in 0..count {
+                image.put_pixel(x, 0, Rgba(color));
+                x += 1;
+            }
+        }
+
+        DynamicImage::ImageRgba8(image)
+    }
+
+    #[test]
+    fn similar_blues_merge_and_preserve_a_less_common_green() {
+        let image = sample_image(&[
+            (100, [100, 150, 200, 255]),
+            (100, [116, 150, 200, 255]),
+            (20, [60, 100, 40, 255]),
+        ]);
+
+        let palette = palette_with_options(&image, 2, 16);
+
+        assert_eq!(
+            palette,
+            vec![
+                Rgba([108, 150, 200, 255]),
+                Rgba([60, 100, 40, 255]),
+                Rgba([0, 0, 0, 0]),
+            ],
         );
-
-        return Some(index as usize);
-    };
-
-    None
-}
-
-fn get_partition(color: &u8, partitions: usize) -> u8 {
-    // ensure color isn't max
-    let mut color = *color;
-    if color == u8::MAX {
-        color = color - 1
     }
 
-    let result = color / partition_len(partitions);
-    // println!(
-    //     "color={},PARTITION_LEN={},result={}, u8::MAX={}",
-    //     color,
-    //     partition_len(),
-    //     result,
-    //     u8::MAX
-    // );
-    return result;
-}
+    #[test]
+    fn a_single_color_uses_the_weighted_mean_of_all_visible_pixels() {
+        let image = sample_image(&[
+            (3, [0, 0, 0, 255]),
+            (1, [255, 255, 255, 255]),
+            (10, [255, 0, 0, 0]),
+        ]);
 
-fn average_color(total: u32, count: u32) -> u8 {
-    if count == 0 {
-        return 0;
+        let palette = palette_with_options(&image, 1, 16);
+
+        assert_eq!(palette, vec![Rgba([63, 63, 63, 255]), Rgba([0, 0, 0, 0])]);
     }
 
-    (total / count) as u8
-}
+    #[test]
+    fn merge_choice_accounts_for_pixel_counts() {
+        let image = sample_image(&[
+            (100, [0, 0, 0, 255]),
+            (100, [16, 0, 0, 255]),
+            (1, [48, 0, 0, 255]),
+        ]);
 
-fn percent(num: i32, den: i32) -> f32 {
-    100.0 * num as f32 / den as f32
+        let palette = palette_with_options(&image, 2, 16);
+
+        // Merging the rare red costs less than merging the two closer, common colors.
+        assert_eq!(
+            palette,
+            vec![
+                Rgba([16, 0, 0, 255]),
+                Rgba([0, 0, 0, 255]),
+                Rgba([0, 0, 0, 0])
+            ],
+        );
+    }
+
+    #[test]
+    fn sparse_and_transparent_images_do_not_add_empty_bucket_colors() {
+        let solid = sample_image(&[(4, [90, 120, 160, 255])]);
+        let transparent = sample_image(&[(4, [255, 255, 255, 0])]);
+
+        for partitions in [1, 2, 4, 8, 16, 32] {
+            assert_eq!(
+                palette_with_options(&solid, 16, partitions),
+                vec![Rgba([90, 120, 160, 255]), Rgba([0, 0, 0, 0])],
+            );
+            assert_eq!(
+                palette_with_options(&transparent, 16, partitions),
+                vec![Rgba([0, 0, 0, 0])],
+            );
+        }
+    }
 }
