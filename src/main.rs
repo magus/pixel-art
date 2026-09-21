@@ -24,7 +24,7 @@ fn options() -> Result<Option<Options>, Box<dyn Error>> {
         input: "./images/panda-bear.JPG".into(),
         output: "./output/pixelated.png".into(),
         size: 32,
-        colors: 32,
+        colors: 16,
         partitions: 3,
         show_palette: false,
         palette_height: 8,
@@ -35,16 +35,18 @@ fn options() -> Result<Option<Options>, Box<dyn Error>> {
     while let Some(flag) = args.next() {
         if flag == "--help" || flag == "-h" {
             println!("pixel-art [--input PATH] [--output PATH] [--size PIXELS] [--colors COUNT] [--partitions COUNT] [--show-palette] [--palette-height PIXELS]");
-            println!("--size sets the longest output edge; aspect ratio is preserved.");
             println!(
-                "--colors caps the RGB palette at 1..=256 colors (default 32), plus transparency."
+                "--size sets the longest output edge; aspect ratio is preserved (default 32)."
+            );
+            println!(
+                "--colors caps the RGB palette at 1..=256 colors, plus transparency (default 16)."
             );
             println!("--partitions sets RGB buckets per channel, 1..=32 (default 3).");
             println!("Use --partitions 16 for a finer palette when comparing color counts.");
             println!(
                 "--show-palette appends a bar of equal-width palette swatches below the image."
             );
-            println!("--palette-height sets the bar height in output pixels (default 8) and enables the bar.");
+            println!("--palette-height sets the bar height in output pixels and enables the bar (default 8).");
             return Ok(None);
         }
 
@@ -126,7 +128,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     // draw image to cli
     // pixel_art_image::print(&img);
 
-    let palette = pixel_art_image::palette_with_options(&img, options.colors, options.partitions);
+    let palette = pixel_art_image::palette(&img, options.colors, options.partitions);
     stopwatch.record("palette");
 
     println!("\n🤖 pixelate\n");

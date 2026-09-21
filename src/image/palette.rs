@@ -2,9 +2,6 @@ use colored::*;
 use image::GenericImageView;
 use image::{DynamicImage, Rgba};
 
-const PARTITIONS: usize = 3;
-const OUTPUT_COLOR_COUNT: usize = 32;
-
 #[derive(Clone, Default)]
 struct ColorBucket {
     pixel_count: u64,
@@ -40,17 +37,9 @@ impl ColorBucket {
     }
 }
 
-pub fn palette(img: &DynamicImage) -> Vec<Rgba<u8>> {
-    palette_with_options(img, OUTPUT_COLOR_COUNT, PARTITIONS)
-}
-
 /// Merge RGB buckets until the palette fits the requested color limit.
 /// The limit applies to opaque colors; transparency is appended separately.
-pub fn palette_with_options(
-    img: &DynamicImage,
-    output_color_count: usize,
-    partitions: usize,
-) -> Vec<Rgba<u8>> {
+pub fn palette(img: &DynamicImage, output_color_count: usize, partitions: usize) -> Vec<Rgba<u8>> {
     assert!((1..=256).contains(&output_color_count));
     assert!((1..=32).contains(&partitions));
 
@@ -174,7 +163,7 @@ mod tests {
             (20, [60, 100, 40, 255]),
         ]);
 
-        let palette = palette_with_options(&image, 2, 16);
+        let palette = palette(&image, 2, 16);
 
         assert_eq!(
             palette,
@@ -194,7 +183,7 @@ mod tests {
             (10, [255, 0, 0, 0]),
         ]);
 
-        let palette = palette_with_options(&image, 1, 16);
+        let palette = palette(&image, 1, 16);
 
         assert_eq!(palette, vec![Rgba([63, 63, 63, 255]), Rgba([0, 0, 0, 0])]);
     }
@@ -207,7 +196,7 @@ mod tests {
             (1, [48, 0, 0, 255]),
         ]);
 
-        let palette = palette_with_options(&image, 2, 16);
+        let palette = palette(&image, 2, 16);
 
         // Merging the rare red costs less than merging the two closer, common colors.
         assert_eq!(
@@ -227,11 +216,11 @@ mod tests {
 
         for partitions in [1, 2, 4, 8, 16, 32] {
             assert_eq!(
-                palette_with_options(&solid, 16, partitions),
+                palette(&solid, 16, partitions),
                 vec![Rgba([90, 120, 160, 255]), Rgba([0, 0, 0, 0])],
             );
             assert_eq!(
-                palette_with_options(&transparent, 16, partitions),
+                palette(&transparent, 16, partitions),
                 vec![Rgba([0, 0, 0, 0])],
             );
         }

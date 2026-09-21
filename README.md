@@ -92,8 +92,8 @@ cargo run --release -- --input input.png --output output/pixelated.png --size 32
 
 For a portrait 2160 × 3840 input, `--size 320` produces 180 × 320 pixels.
 The size must produce nonzero dimensions no larger than the input. Without
-options, the original panda input, output path, and 32-pixel longest edge remain
-the defaults. Run with `--help` for usage.
+options, the CLI uses the panda input, `output/pixelated.png`, and a 32-pixel longest edge.
+Run with `--help` for usage.
 
 PNG output preserves embedded RGB color profiles from PNG, JPEG, TIFF, and WebP inputs, including
 Display P3. The palette and pixel values stay in the source color space. Use a `.png` output for
@@ -101,9 +101,8 @@ profiled inputs; other output formats currently return an error instead of dropp
 Convert grayscale or CMYK profiles to RGB before rendering. Untagged images keep their existing
 behavior.
 
-The palette defaults to three partitions per RGB channel and a 32-color limit.
-That produces at most 27 occupied RGB buckets, plus transparency, and can produce
-fewer distinct colors.
+The palette defaults to three partitions per RGB channel and a 16-color limit.
+That gives 27 starting RGB buckets, which merge down to at most 16 colors, plus transparency.
 
 Use `--colors` to cap the RGB palette at 1–256 entries and `--partitions` to set
 1–32 buckets per RGB channel. For example:
