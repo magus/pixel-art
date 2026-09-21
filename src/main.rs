@@ -120,7 +120,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     let squared_output = false;
 
     let img = pixel_art_image::zealous_crop(&img, squared);
-    // pixel_art_image::output(&img, "./output/cropped.png")?;
+    // pixel_art_image::output(&img, &options.input, "./output/cropped.png")?;
     stopwatch.record("zealous_crop");
 
     // draw image to cli
@@ -278,7 +278,7 @@ fn main() -> Result<(), Box<dyn Error>> {
             pixel_art_image::with_palette_bar(&pixelated, &palette, options.palette_height)?;
     }
 
-    pixel_art_image::output(&pixelated, &options.output)?;
+    pixel_art_image::output(&pixelated, &options.input, &options.output)?;
     stopwatch.record("output_pixelated");
 
     stopwatch.all();

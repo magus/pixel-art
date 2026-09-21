@@ -69,7 +69,9 @@ view of individual cells. More partitions add cubic drawing cost: 8 means 512 ce
 The requested color count is a ceiling. An image can produce fewer selected colors.
 
 Use a PNG or another format Pillow can decode. The script handles EXIF orientation but does not
-convert color profiles to sRGB. For comparable RGB values, prepare an sRGB image before running it.
+convert color profiles to sRGB. The Rust CLI now preserves an embedded RGB profile in the artwork PNG.
+The browser visualization still uses sRGB colors. Prepare an sRGB source first when using this viewer
+to keep its displayed colors consistent with the artwork.
 Fully transparent pixels do not contribute to the palette or samples. Other pixels contribute their
 RGB values without alpha weighting, matching the Rust palette code.
 
@@ -117,6 +119,13 @@ selected colors in CLI order:
 
 The reusable generator was checked against the original result. The artwork pixels, all cell counts
 and means, all 2,500 samples, and the selected palette matched exactly.
+
+The original crop carries a Display P3 profile. The first renderer dropped it, which changed how
+viewers displayed the output colors. The output function now reads the profile from the source file
+and embeds it in the generated PNG, including images with a palette bar. The CLI still loads pixels
+with `image::open`; profile handling stays inside the output module. Rebuild before reproducing this
+result. The profile correction changes color metadata only; palette selection and pixel values stay
+the same. PNG and JPEG regression tests cover profile retention and unchanged decoded pixels.
 
 ## How the data and view work
 

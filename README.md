@@ -95,6 +95,12 @@ The size must produce nonzero dimensions no larger than the input. Without
 options, the original panda input, output path, and 32-pixel longest edge remain
 the defaults. Run with `--help` for usage.
 
+PNG output preserves embedded RGB color profiles from PNG, JPEG, TIFF, and WebP inputs, including
+Display P3. The palette and pixel values stay in the source color space. Use a `.png` output for
+profiled inputs; other output formats currently return an error instead of dropping the profile.
+Convert grayscale or CMYK profiles to RGB before rendering. Untagged images keep their existing
+behavior.
+
 The palette defaults to three partitions per RGB channel and a 32-color limit.
 That produces at most 27 occupied RGB buckets, plus transparency, and can produce
 fewer distinct colors.
