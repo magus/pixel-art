@@ -1,0 +1,1356 @@
+<!doctype html>
+<html lang="en" data-visualize-standalone data-theme="dark" style="color-scheme:dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="referrer" content="no-referrer">
+
+<title>RGB color space</title>
+<style>:root {
+  color-scheme: light dark;
+  background-color: var(
+    --background,
+    var(--color-background-primary, light-dark(rgb(255 255 255), rgb(24 24 24)))
+  ) !important;
+
+  /* Agent-facing contract; keep in sync with SKILL.md. */
+  --background: var(
+    --color-background-primary,
+    light-dark(rgb(255 255 255), rgb(24 24 24))
+  );
+  --foreground: var(
+    --color-text-primary,
+    light-dark(rgb(26 28 31), rgb(255 255 255))
+  );
+  --card: color-mix(in oklab, var(--foreground) 5%, var(--background));
+  --card-foreground: var(
+    --color-text-primary,
+    light-dark(rgb(26 28 31), rgb(255 255 255))
+  );
+  --popover: var(
+    --color-background-secondary,
+    light-dark(rgb(255 255 255), rgb(45 45 45))
+  );
+  --popover-foreground: var(
+    --color-text-primary,
+    light-dark(rgb(26 28 31), rgb(255 255 255))
+  );
+  --primary: var(
+    --color-text-info,
+    light-dark(rgb(51 156 255), rgb(131 195 255))
+  );
+  --primary-foreground: var(
+    --color-text-inverse,
+    light-dark(rgb(255 255 255), rgb(13 13 13))
+  );
+  --secondary: var(
+    --color-background-secondary,
+    light-dark(rgb(255 255 255 / 96%), rgb(54 54 54 / 96%))
+  );
+  --secondary-foreground: var(
+    --color-text-primary,
+    light-dark(rgb(26 28 31), rgb(255 255 255))
+  );
+  --muted: color-mix(in srgb, var(--foreground) 10%, transparent);
+  --muted-foreground: var(
+    --color-text-secondary,
+    light-dark(rgb(26 28 31 / 49.4%), rgb(255 255 255 / 49.8%))
+  );
+  --accent: var(
+    --color-background-info,
+    light-dark(rgb(229 242 255), rgb(13 39 63))
+  );
+  --accent-foreground: var(
+    --color-text-info,
+    light-dark(rgb(51 156 255), rgb(131 195 255))
+  );
+  --destructive: var(
+    --color-text-warning,
+    light-dark(rgb(226 85 7), rgb(255 133 73))
+  );
+  --border: var(
+    --color-border-secondary,
+    light-dark(rgb(26 28 31 / 8%), rgb(255 255 255 / 8.2%))
+  );
+  --input: var(
+    --color-border-primary,
+    light-dark(
+      rgb(26 28 31 / 11.8%),
+      color-mix(in oklab, rgb(0 0 0) 10%, transparent)
+    )
+  );
+  --ring: var(
+    --color-ring-primary,
+    light-dark(rgb(51 156 255), rgb(131 195 255 / 76%))
+  );
+  --font-size-base: var(--font-text-md-size, 14px);
+  --blue: light-dark(rgb(51 156 255), rgb(51 156 255));
+  --orange: light-dark(rgb(226 85 7), rgb(251 106 34));
+  --green: light-dark(rgb(0 162 64), rgb(64 201 119));
+  --red: light-dark(rgb(224 46 42), rgb(255 103 100));
+  --purple: light-dark(rgb(146 79 247), rgb(173 123 249));
+  --yellow: light-dark(rgb(255 195 0), rgb(255 210 64));
+  --viz-series-1: var(--primary);
+  --viz-series-2: light-dark(rgb(243 136 59), rgb(245 154 86));
+  --viz-series-3: light-dark(rgb(93 201 119), rgb(116 213 139));
+  --viz-series-4: light-dark(rgb(235 119 177), rgb(240 143 192));
+  --viz-series-5: light-dark(rgb(155 121 236), rgb(170 145 239));
+  --viz-series-6: light-dark(rgb(58 185 177), rgb(90 203 194));
+
+  /* Internal implementation variables; not part of the agent contract. */
+  --font-sans: -apple-system, system-ui, "Segoe UI", sans-serif;
+  --font-mono:
+    ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono",
+    monospace;
+  --font-size-normal: max(11px, var(--font-size-base));
+  --font-size-tooltip: calc(var(--font-size-base) - 1px);
+  --font-size-small: max(11px, calc(var(--font-size-base) - 2px));
+  --font-size-h1: calc(var(--font-size-normal) * 1.7142857143);
+  --font-size-h2: calc(var(--font-size-normal) * 1.4285714286);
+  --font-size-h3: calc(var(--font-size-normal) * 1.2857142857);
+  --font-weight-normal: 430;
+  --font-weight-medium: 500;
+  --icon-size: 16px;
+  --line-height-normal: calc(var(--font-size-normal) * 1.5);
+  --line-height-tooltip: calc(var(--font-size-tooltip) * 1.4285714286);
+  --line-height-small: calc(var(--font-size-small) + 4px);
+  --corner-shape: round;
+  --radius: var(--border-radius-lg, 10px);
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-2xl: calc(var(--radius) * 1.6);
+  --radius-full: 9999px;
+  --shadow-sm: 0 1px 2px -1px rgb(0 0 0 / 8%);
+  --checkmark-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 17 17'%3E%3Cpath d='M12.8961 3.64101C13.1297 3.41418 13.4984 3.37523 13.7779 3.56581C14.0571 3.75635 14.1554 4.11331 14.0299 4.41347L13.9615 4.53847L7.71151 13.7045C7.59411 13.8767 7.4063 13.9877 7.19881 14.0072C6.99136 14.0267 6.78564 13.9533 6.63826 13.806L2.88826 10.056L2.79842 9.9457C2.6192 9.67407 2.64927 9.30496 2.88826 9.06581C3.12738 8.82669 3.49647 8.79676 3.76815 8.97597L3.8785 9.06581L7.03084 12.2182L12.8053 3.74941L12.8961 3.64101Z'/%3E%3C/svg%3E");
+
+  /* Legacy aliases; not part of the current agent contract. */
+  --viz-bg: transparent;
+  --viz-panel: var(--card);
+  --viz-border: var(--border);
+  --viz-text: var(--foreground);
+  --viz-muted: var(--muted-foreground);
+  --viz-accent: var(--primary);
+  --viz-accent-text: var(--primary-foreground);
+  --viz-accent-bg: var(--accent);
+  --viz-font-size: var(--font-size-base);
+  --viz-warning: var(--destructive);
+}
+
+:root[data-theme="light"] {
+  color-scheme: light;
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html > body {
+  /* Preserve MCP aliases for older inline renderers without creating :root cycles. */
+  --color-background-primary: var(
+    --background,
+    light-dark(rgb(255 255 255), rgb(24 24 24))
+  );
+  --color-text-primary: var(
+    --foreground,
+    light-dark(rgb(26 28 31), rgb(255 255 255))
+  );
+  --color-border-secondary: var(
+    --border,
+    light-dark(rgb(26 28 31 / 8%), rgb(255 255 255 / 8.2%))
+  );
+
+  margin: 0;
+  padding: var(--visualize-paint-gutter, 0px);
+  color: var(--foreground);
+  background: transparent !important;
+  font-family: var(--font-sans) !important;
+  font-size: var(--font-size-normal);
+  font-weight: var(--font-weight-normal);
+  line-height: var(--line-height-normal);
+}
+
+a {
+  color: color-mix(in srgb, var(--viz-accent) 80%, var(--viz-text) 20%);
+  cursor: pointer;
+  font-weight: var(--font-weight-medium, 500);
+  text-decoration: none;
+  text-underline-offset: 2px;
+}
+
+a:is(:hover, :focus-visible) {
+  text-decoration-line: underline;
+  text-decoration-style: dashed;
+  text-decoration-thickness: 0.5px;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+p {
+  margin-block: 0;
+}
+
+h1 {
+  font-size: var(--font-size-h1);
+  font-weight: var(--font-weight-medium);
+  line-height: 1.25;
+}
+
+h2 {
+  font-size: var(--font-size-h2);
+  font-weight: var(--font-weight-medium);
+  line-height: 1.25;
+}
+
+h3,
+h4,
+h5,
+h6 {
+  font-size: var(--font-size-h3);
+  font-weight: var(--font-weight-medium);
+  line-height: 1.3;
+}
+
+b,
+strong,
+th {
+  font-weight: var(--font-weight-medium);
+}
+
+code:not(pre code) {
+  display: inline;
+  padding: 1px 6px;
+  border-radius: var(--radius-sm);
+  corner-shape: var(--corner-shape);
+  background: var(--muted);
+  font-family: var(--font-mono);
+  font-size: 0.92em;
+  overflow-wrap: anywhere;
+  -webkit-box-decoration-break: clone;
+  box-decoration-break: clone;
+  word-break: break-word;
+}
+
+.table-responsive {
+  width: 100%;
+  overflow-x: auto;
+  scrollbar-width: thin;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  color: var(--foreground);
+  font: inherit;
+  text-align: start;
+}
+
+.table :is(th, td) {
+  padding-block: 10px;
+  padding-inline: 0 24px;
+  overflow-wrap: anywhere;
+  border-bottom: 1px solid var(--border);
+  text-align: start;
+  vertical-align: top;
+}
+
+.table-responsive > .table :is(th, td) {
+  overflow-wrap: break-word;
+}
+
+.table :is(th, td):last-child {
+  padding-inline-end: 0;
+}
+
+.table :is(caption, thead th) {
+  font-weight: 600;
+}
+
+.table thead th {
+  padding-block: 8px;
+  border-bottom-color: color-mix(in srgb, var(--foreground) 16%, transparent);
+}
+
+.table tbody tr:last-child :is(th, td) {
+  border-bottom: 0;
+}
+
+.table.table-sm :is(th, td) {
+  padding-block: 6px;
+}
+
+.table.table-sm :is(th, td):not(:last-child) {
+  padding-inline-end: 16px;
+}
+
+.table :is(.text-end, [align="right"]) {
+  text-align: end;
+  font-variant-numeric: tabular-nums;
+}
+
+.table :is(.text-center, [align="center"]) {
+  text-align: center;
+}
+
+.table .text-nowrap {
+  white-space: nowrap;
+}
+
+#widget {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+  padding: 0;
+  background: transparent !important;
+}
+
+.card {
+  min-width: 0;
+  padding: 12px;
+  overflow: hidden;
+  overflow-wrap: break-word;
+  border-radius: var(--radius-2xl);
+  corner-shape: var(--corner-shape);
+  color: var(--card-foreground);
+  background: var(--card);
+}
+
+#widget > :not(.card, .progress) {
+  width: 100% !important;
+  max-width: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.tooltip {
+  position: fixed;
+  z-index: 50;
+  top: 0;
+  left: 0;
+  width: max-content;
+  max-width: min(
+    20rem,
+    var(--tooltip-available-width, calc(100vw - 10px)),
+    calc(100vw - 10px)
+  );
+  max-height: min(
+    var(--tooltip-available-height, calc(100vh - 10px)),
+    calc(100vh - 10px)
+  );
+  padding: 4px 8px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  corner-shape: var(--corner-shape);
+  color: var(--popover-foreground);
+  background: var(--popover);
+  box-shadow: none;
+  font-size: var(--font-size-tooltip);
+  line-height: var(--line-height-tooltip);
+  overflow-wrap: break-word;
+  white-space: normal;
+  pointer-events: none;
+  user-select: none;
+}
+
+.viz-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(max(180px, 24%), 1fr));
+  gap: 10px;
+}
+
+.viz-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.viz-stat-value {
+  font-size: var(--font-size-h2);
+  font-weight: var(--font-weight-medium);
+  line-height: 1.25;
+}
+
+.viz-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
+hr {
+  width: 100%;
+  height: 1px;
+  margin-block: 6px;
+  border: 0;
+  background: var(--border);
+}
+
+.nav {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 4px;
+}
+
+.progress {
+  display: flex;
+  height: 8px;
+  margin-block: calc((var(--line-height-normal, 1.5em) - 8px) / 2);
+  overflow: hidden;
+  border: 0;
+  border-radius: var(--radius-full);
+  background: var(--muted);
+}
+
+.progress-bar:only-child {
+  border-radius: var(--radius-full);
+}
+
+.progress-bar {
+  height: 100%;
+  flex-shrink: 0;
+  border: 0;
+  background: var(--viz-series-1);
+}
+
+.viz-badge {
+  padding: 3px 8px;
+  border-radius: var(--radius-full);
+  color: var(--accent-foreground);
+  background: var(--accent);
+  font-weight: var(--font-weight-medium);
+}
+
+small,
+.text-small,
+.viz-badge {
+  font-size: var(--font-size-small);
+  line-height: var(--line-height-small);
+}
+
+.text-muted {
+  color: var(--muted-foreground);
+}
+
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.viz-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.viz-controls > .form-label {
+  display: grid;
+  min-width: min(100%, 260px);
+  flex: 1 1 280px;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: baseline;
+  gap: 2px 12px;
+  margin-bottom: 0;
+}
+
+.viz-controls > .form-label > :is(.form-control, .form-range, .form-select) {
+  grid-column: 1 / -1;
+}
+
+.btn,
+.nav-link,
+.form-check-input,
+.form-control,
+.form-range,
+.form-select {
+  font: inherit;
+}
+
+.btn,
+.nav-link {
+  appearance: button;
+  display: inline-flex;
+  inline-size: fit-content;
+  max-inline-size: 100%;
+  min-height: 28px;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  margin: 0;
+  padding: 0 8px;
+  -webkit-app-region: no-drag;
+  border: 1px solid var(--input);
+  border-radius: var(--radius-lg);
+  corner-shape: var(--corner-shape);
+  color: var(--secondary-foreground);
+  background: var(--secondary);
+  cursor: var(--cursor-interaction, pointer);
+  text-align: center;
+  text-decoration: none;
+  white-space: nowrap;
+  user-select: none;
+  -webkit-font-smoothing: antialiased;
+}
+
+.btn:is(.btn-block, .viz-tile) {
+  inline-size: 100%;
+}
+
+.btn.viz-tile {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  white-space: normal;
+}
+
+a.btn {
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.btn:not(:disabled):hover,
+.nav-link:not(:disabled):not([aria-disabled="true"]):hover {
+  background: color-mix(in srgb, var(--foreground) 6%, var(--secondary));
+}
+
+.btn-primary {
+  border-color: transparent;
+  color: var(--primary-foreground);
+  background: var(--foreground);
+  background-clip: padding-box;
+}
+
+.btn-primary .text-muted {
+  color: color-mix(in srgb, var(--primary-foreground) 50%, transparent);
+}
+
+.btn-primary:not(:disabled):hover {
+  background: color-mix(in srgb, var(--foreground) 80%, transparent);
+  background-clip: padding-box;
+}
+
+.btn-ghost {
+  border-color: transparent;
+  color: var(--muted-foreground);
+  background: transparent;
+}
+
+.btn-ghost:not(:disabled):hover {
+  color: var(--foreground);
+  background: color-mix(in srgb, var(--foreground) 6%, var(--secondary));
+}
+
+.nav-pills .nav-link {
+  min-width: 0;
+  border-color: transparent;
+  color: var(--muted-foreground);
+  background: transparent;
+}
+
+.nav-justified .nav-link {
+  flex: 1 1 0;
+  overflow-wrap: anywhere;
+  white-space: normal;
+}
+
+.nav-pills .nav-link.active {
+  color: var(--foreground);
+  background: var(--muted);
+}
+
+.btn:disabled,
+.nav-link:disabled,
+.nav-link[aria-disabled="true"] {
+  cursor: not-allowed;
+  opacity: 0.4;
+}
+
+[data-lucide] {
+  stroke-width: 1.6;
+}
+
+.form-label {
+  display: block;
+  margin-bottom: 6px;
+  color: var(--foreground);
+}
+
+.form-control {
+  display: block;
+  width: 100%;
+  min-height: 28px;
+  padding: 0 8px;
+  outline: none;
+  border: 1px solid var(--input);
+  border-radius: var(--radius-lg);
+  corner-shape: var(--corner-shape);
+  color: var(--foreground);
+  background: var(--secondary);
+}
+
+.form-control::placeholder {
+  color: var(--muted-foreground);
+}
+
+.form-control[type="file"] {
+  padding: 0;
+  overflow: hidden;
+  cursor: var(--cursor-interaction, pointer);
+}
+
+.form-control[type="file"]::file-selector-button {
+  min-height: 26px;
+  margin-right: 8px;
+  padding: 0 8px;
+  border: 0;
+  border-right: 1px solid var(--input);
+  color: var(--secondary-foreground);
+  background: var(--secondary);
+  cursor: inherit;
+  font: inherit;
+}
+
+.form-control[type="file"]:not(:disabled):hover::file-selector-button {
+  background: color-mix(in srgb, var(--foreground) 6%, var(--secondary));
+}
+
+.form-control-color[type="color"] {
+  width: 40px;
+  height: 28px;
+  padding: 3px;
+  cursor: var(--cursor-interaction, pointer);
+}
+
+.form-control-color[type="color"]::-webkit-color-swatch-wrapper {
+  padding: 0;
+}
+
+.form-control-color[type="color"]::-webkit-color-swatch {
+  border: 0;
+  border-radius: calc(var(--radius-lg) - 4px);
+  corner-shape: var(--corner-shape);
+}
+
+textarea.form-control {
+  height: auto;
+  min-height: 72px;
+  padding: 8px 10px;
+  resize: vertical;
+}
+
+.form-control:focus-visible {
+  border-color: var(--ring);
+  box-shadow: inset 0 0 0 1px var(--ring);
+}
+
+.form-control:disabled,
+.form-select:disabled {
+  cursor: not-allowed;
+  opacity: 0.4;
+}
+
+.form-select {
+  appearance: none;
+  display: block;
+  width: 100%;
+  min-height: 28px;
+  margin: 0;
+  padding: 0 32px 0 8px;
+  outline: none;
+  border: 1px solid var(--input);
+  border-radius: var(--radius-lg);
+  corner-shape: var(--corner-shape);
+  color: var(--foreground);
+  background-color: var(--secondary);
+  background-image:
+    linear-gradient(45deg, transparent 50%, var(--muted-foreground) 50%),
+    linear-gradient(135deg, var(--muted-foreground) 50%, transparent 50%);
+  background-position:
+    calc(100% - 14px) 50%,
+    calc(100% - 10px) 50%;
+  background-repeat: no-repeat;
+  background-size: 4px 4px;
+  cursor: var(--cursor-interaction, default);
+}
+
+.form-select:not(:disabled):hover {
+  background-color: color-mix(in srgb, var(--foreground) 6%, var(--secondary));
+}
+
+.form-select:focus-visible {
+  border-color: var(--ring);
+  box-shadow: inset 0 0 0 1px var(--ring);
+}
+
+.form-check {
+  display: flex;
+  min-height: 20px;
+  align-items: center;
+  gap: 6px;
+}
+
+.form-check-input {
+  appearance: none;
+  width: 14px;
+  height: 14px;
+  flex: 0 0 auto;
+  margin: 0;
+  border: 1px solid var(--input);
+  color: var(--primary-foreground);
+  background-color: transparent;
+  cursor: var(--cursor-interaction, default);
+  transition:
+    background-color 150ms,
+    border-color 150ms,
+    box-shadow 150ms;
+}
+
+.form-check:not(.form-switch) .form-check-input[type="checkbox"] {
+  border-color: var(--input);
+  border-radius: var(--radius-sm);
+  corner-shape: var(--corner-shape);
+  background-color: var(--secondary);
+  box-shadow: var(--shadow-sm);
+}
+
+.form-check:not(.form-switch)
+  .form-check-input:not(:disabled):not(:checked):hover {
+  background-color: var(--card);
+}
+
+.form-check:not(.form-switch) .form-check-input[type="checkbox"]:checked {
+  border-color: var(--primary);
+  background-color: var(--primary);
+}
+
+.form-check:not(.form-switch)
+  .form-check-input[type="checkbox"]:checked::before {
+  display: block;
+  width: 100%;
+  height: 100%;
+  background: var(--primary-foreground);
+  content: "";
+  mask: var(--checkmark-image) center / 12px 12px no-repeat;
+}
+
+.form-check-input[type="radio"] {
+  width: 14px;
+  height: 14px;
+  border-radius: var(--radius-full);
+}
+
+.form-check-input[type="radio"]:checked {
+  border: 2px solid var(--primary);
+  background:
+    radial-gradient(circle, var(--primary-foreground) 0 2.5px, transparent 3px),
+    var(--primary);
+}
+
+.form-check:not(.form-switch) .form-check-input:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+
+.form-check:not(.form-switch) .form-check-input:disabled {
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+.form-check:not(.form-switch) .form-check-input:disabled + .form-check-label {
+  cursor: not-allowed;
+}
+
+.form-switch .form-check-input:disabled,
+.form-switch .form-check-input:disabled + .form-check-label {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.form-check-label {
+  color: var(--foreground);
+  cursor: var(--cursor-interaction, default);
+}
+
+.form-switch .form-check-input {
+  position: relative;
+  width: 32px;
+  height: 20px;
+  border: 0;
+  border-radius: var(--radius-full);
+  background: var(--muted);
+  box-shadow: none;
+  transition: background-color 200ms cubic-bezier(0, 0, 0.2, 1);
+}
+
+.form-switch .form-check-input::before {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  width: 16px;
+  height: 16px;
+  box-sizing: border-box;
+  border: 1px solid light-dark(var(--primary-foreground), var(--foreground));
+  border-radius: var(--radius-full);
+  background: light-dark(var(--primary-foreground), var(--foreground));
+  box-shadow: var(--shadow-sm);
+  content: "";
+  transform: translate(2px, -50%);
+  transition: transform 200ms cubic-bezier(0, 0, 0.2, 1);
+}
+
+.form-switch .form-check-input:checked {
+  background: var(--primary);
+}
+
+.form-switch .form-check-input:checked::before {
+  transform: translate(14px, -50%);
+}
+
+.form-switch .form-check-input:focus-visible {
+  box-shadow: 0 0 0 2px var(--ring);
+}
+
+.form-range {
+  appearance: none;
+  display: block;
+  width: 100%;
+  height: 28px;
+  flex: 1;
+  margin: 0;
+  padding: 0;
+  outline: none;
+  border: 0;
+  accent-color: var(--primary);
+  background: linear-gradient(
+      color-mix(in srgb, var(--foreground) 7%, transparent),
+      color-mix(in srgb, var(--foreground) 7%, transparent)
+    )
+    center / 100% 2px no-repeat;
+}
+
+.form-range::-webkit-slider-runnable-track {
+  height: 28px;
+  background: transparent;
+}
+
+.form-range::-webkit-slider-thumb {
+  appearance: none;
+  width: 20px;
+  height: 20px;
+  margin-top: 4px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-full);
+  background: light-dark(var(--primary-foreground), var(--foreground));
+}
+
+.form-range:focus-visible::-webkit-slider-thumb {
+  border-color: var(--ring);
+  box-shadow: inset 0 0 0 1px var(--ring);
+}
+
+.form-range::-moz-range-track {
+  height: 28px;
+  background: transparent;
+}
+
+.form-range::-moz-range-thumb {
+  width: 20px;
+  height: 20px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-full);
+  background: light-dark(var(--primary-foreground), var(--foreground));
+}
+
+.form-range:focus-visible::-moz-range-thumb {
+  border-color: var(--ring);
+  box-shadow: inset 0 0 0 1px var(--ring);
+}
+
+.form-range:disabled {
+  cursor: not-allowed;
+  opacity: 0.4;
+}
+
+.btn:not(.btn-primary, .viz-tile):is(
+  [aria-pressed="true"],
+  [aria-selected="true"],
+  .is-selected
+) {
+  border-color: var(--primary);
+  color: var(--primary-foreground);
+  background: var(--primary);
+}
+
+.btn.viz-tile:is([aria-pressed="true"], [aria-selected="true"], .is-selected) {
+  border-color: var(--primary);
+  box-shadow: inset 0 0 0 1px var(--primary);
+}
+
+.btn:focus-visible,
+.nav-link:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+
+@media (pointer: coarse) {
+  .btn,
+  .nav-link,
+  .form-control,
+  .form-select {
+    min-width: 44px;
+    min-height: 44px;
+  }
+
+  /* Keep small-screen WebKit from zooming when a text field receives focus. */
+  .form-control,
+  .form-select {
+    font-size: max(16px, var(--font-size-normal));
+  }
+
+  .form-control[type="file"]::file-selector-button {
+    min-width: 44px;
+    min-height: 44px;
+  }
+
+  .form-control-color[type="color"] {
+    width: 44px;
+    height: 44px;
+  }
+
+  .form-control:is(
+    [type="date"],
+    [type="datetime-local"],
+    [type="month"],
+    [type="time"],
+    [type="week"]
+  ) {
+    min-width: 0;
+    max-width: 100%;
+    padding-block: 8px;
+  }
+
+  .form-check {
+    min-height: 44px;
+    padding-inline: 15px;
+  }
+
+  .form-check-input {
+    position: relative;
+  }
+
+  .form-check-input::after {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 44px;
+    height: 44px;
+    content: "";
+    transform: translate(-50%, -50%);
+  }
+
+  .form-check-label {
+    display: inline-flex;
+    min-width: 44px;
+    min-height: 44px;
+    align-items: center;
+  }
+
+  .form-range {
+    height: 44px;
+    touch-action: pan-y;
+  }
+
+  .form-range::-webkit-slider-runnable-track {
+    height: 44px;
+  }
+
+  .form-range::-moz-range-track {
+    height: 44px;
+  }
+
+  .form-range::-webkit-slider-thumb {
+    margin-top: 12px;
+  }
+}
+
+svg {
+  display: block;
+  max-width: 100%;
+  height: auto;
+}
+
+#widget > svg {
+  width: 100%;
+}
+
+/* Model-authored chart rules can otherwise stretch icons after these styles load. */
+svg.lucide {
+  display: block;
+  width: var(--icon-size) !important;
+  height: var(--icon-size) !important;
+  flex: none;
+  margin: 0 !important;
+  stroke-width: 1.6;
+}
+
+.text-warning,
+.text-destructive {
+  color: var(--destructive);
+}
+
+html>body{padding:16px;max-width:992px;margin:0 auto;box-sizing:border-box}</style>
+</head>
+<body>
+<div id="rotating-rgb-partitions">
+  <style>
+    #rotating-rgb-partitions .cube-stage { width: 100%; }
+    #rotating-rgb-partitions canvas { display: block; width: 100%; touch-action: none; cursor: grab; }
+    #rotating-rgb-partitions canvas:active { cursor: grabbing; }
+    #rotating-rgb-partitions .cube-legend { margin-top: 8px; }
+  </style>
+  <h3>Inside the RGB partitions</h3>
+  <div class="text-small">__RGB_SUMMARY__</div>
+  <div class="viz-controls">
+    <button class="btn" id="rgb-spin" type="button" aria-pressed="true">Pause rotation</button>
+    <label class="form-label" for="rgb-spacing">Cell spacing <span id="rgb-spacing-value" class="tabular-nums">18</span>
+      <input class="form-range" id="rgb-spacing" type="range" min="0" max="48" value="18">
+    </label>
+    <label class="form-check">
+      <input class="form-check-input" id="rgb-source" type="checkbox" checked>
+      <span class="form-check-label">Source colors</span>
+    </label>
+  </div>
+  <div class="cube-stage">
+    <canvas id="rgb-canvas" role="img" aria-label="Rotatable RGB cube divided into __CELL_COUNT__ cells. Filled cells contain source colors; outlined circles mark the __PALETTE_COUNT__ selected palette colors. Drag to turn or tilt the cube. Use the rotation button to turn it automatically."></canvas>
+  </div>
+  <div class="viz-row text-small cube-legend">
+    <span>Filled cells: occupied buckets</span>
+    <span>Small dots: source samples</span>
+    <span>Rings: selected colors</span>
+  </div>
+  <div id="rgb-selection" class="text-small" aria-live="polite"></div>
+</div>
+<script id="rgb-data" type="application/json">__RGB_DATA__</script>
+<script>
+(() => {
+  const root = document.getElementById('rotating-rgb-partitions');
+  const data = JSON.parse(document.getElementById('rgb-data').textContent);
+  const partitions = data.partitions;
+  const partitionWidth = Math.ceil(255 / partitions);
+  const lastIndex = partitions - 1;
+
+  const canvas = root.querySelector('#rgb-canvas');
+  const context = canvas.getContext('2d');
+  const spinButton = root.querySelector('#rgb-spin');
+  const spacingInput = root.querySelector('#rgb-spacing');
+  const spacingValue = root.querySelector('#rgb-spacing-value');
+  const sourceInput = root.querySelector('#rgb-source');
+  const selection = root.querySelector('#rgb-selection');
+  const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)');
+  const probe = document.createElement('span');
+  probe.hidden = true;
+  root.append(probe);
+
+  let width = 0;
+  let height = 0;
+  let projectionScale = 1;
+  let focalLength = 900;
+  let yaw = -0.72;
+  let pitch = 0.43;
+  let spacing = 18;
+  let spinning = !reducedMotion.matches;
+  let previousTime = 0;
+  let drag = null;
+  let frame = null;
+  let paletteHits = [];
+  let selectedColor = -1;
+  let theme = {};
+
+  function resolveColor(token) {
+    probe.style.color = `var(${token})`;
+    return getComputedStyle(probe).color;
+  }
+
+  function updateTheme() {
+    theme = {
+      foreground: resolveColor('--foreground'),
+      muted: resolveColor('--muted-foreground'),
+      grid: resolveColor('--muted-foreground'),
+      red: resolveColor('--red'),
+      green: resolveColor('--green'),
+      blue: resolveColor('--blue'),
+      font: getComputedStyle(root).font,
+    };
+    draw();
+  }
+
+  function cellIndex(point) {
+    return point.map(value => Math.floor(Math.min(254, Math.max(0, value)) / partitionWidth));
+  }
+
+  function world(point, index = cellIndex(point)) {
+    return point.map((value, channel) => value - 127.5 + (index[channel] - lastIndex / 2) * spacing);
+  }
+
+  function project(point) {
+    const [red, green, blue] = point;
+    const horizontal = Math.cos(yaw) * red - Math.sin(yaw) * green;
+    const across = Math.sin(yaw) * red + Math.cos(yaw) * green;
+    const vertical = Math.cos(pitch) * blue - Math.sin(pitch) * across;
+    const depth = Math.sin(pitch) * blue + Math.cos(pitch) * across;
+    const perspective = focalLength / (focalLength - depth);
+
+    return {
+      x: width / 2 + horizontal * projectionScale * perspective,
+      y: height / 2 - vertical * projectionScale * perspective,
+      depth,
+      perspective,
+    };
+  }
+
+  function fitProjection() {
+    // Enclose the cube and axis-label anchors in a sphere for every rotation and tilt.
+    const halfExtent = (255 + lastIndex * spacing) / 2;
+    const radius = Math.hypot(halfExtent + 30, halfExtent, halfExtent);
+    focalLength = Math.max(900, radius * 2);
+    const projectedRadius = focalLength * radius / Math.sqrt(focalLength ** 2 - radius ** 2);
+
+    // Leave room outside the sphere for label text, point rings, and stroke widths.
+    context.font = theme.font || getComputedStyle(root).font;
+    const padding = Math.max(40, context.measureText('B 255').width / 2 + 16);
+    projectionScale = Math.max(1, Math.min(width, height) / 2 - padding) / projectedRadius;
+  }
+
+  const faces = [[0,1,3,2], [4,6,7,5], [0,4,5,1], [2,3,7,6], [0,2,6,4], [1,5,7,3]];
+  const edges = [[0,1],[0,2],[0,4],[1,3],[1,5],[2,3],[2,6],[3,7],[4,5],[4,6],[5,7],[6,7]];
+
+  function draw() {
+    if (!width) return;
+    fitProjection();
+    context.clearRect(0, 0, width, height);
+    const objects = [];
+
+    for (const cell of data.cells) {
+      const low = cell.index.map(index => index * partitionWidth);
+      const high = low.map(value => Math.min(255, value + partitionWidth));
+      const vertices = Array.from({length: 8}, (_, corner) => project(world([
+        corner & 1 ? high[0] : low[0],
+        corner & 2 ? high[1] : low[1],
+        corner & 4 ? high[2] : low[2],
+      ], cell.index)));
+
+      if (cell.count) {
+        for (const face of faces) {
+          const points = face.map(index => vertices[index]);
+          objects.push({
+            kind: 'face', points,
+            depth: points.reduce((sum, point) => sum + point.depth, 0) / points.length,
+            color: `rgb(${cell.color.join(',')})`,
+          });
+        }
+      }
+
+      for (const [first, last] of edges) {
+        objects.push({kind: 'edge', points: [vertices[first], vertices[last]],
+          depth: (vertices[first].depth + vertices[last].depth) / 2, occupied: cell.count > 0});
+      }
+    }
+
+    if (sourceInput.checked) {
+      for (const color of data.samples) {
+        objects.push({kind: 'sample', point: project(world(color)), color: `rgb(${color.join(',')})`});
+      }
+    }
+
+    for (const [index, color] of data.palette.entries()) {
+      objects.push({kind: 'palette', point: project(world(color)), color: `rgb(${color.join(',')})`, index});
+    }
+
+    for (const object of objects) {
+      if (object.point) object.depth = object.point.depth;
+    }
+    objects.sort((left, right) => left.depth - right.depth);
+    paletteHits = [];
+
+    for (const object of objects) {
+      if (object.kind === 'face') {
+        context.beginPath();
+        object.points.forEach((point, index) => index ? context.lineTo(point.x, point.y) : context.moveTo(point.x, point.y));
+        context.closePath();
+        context.fillStyle = object.color;
+        context.globalAlpha = 0.045;
+        context.fill();
+      } else if (object.kind === 'edge') {
+        context.beginPath();
+        context.moveTo(object.points[0].x, object.points[0].y);
+        context.lineTo(object.points[1].x, object.points[1].y);
+        context.strokeStyle = theme.grid;
+        context.globalAlpha = object.occupied ? 0.32 : 0.10;
+        context.lineWidth = 0.7;
+        context.stroke();
+      } else {
+        const point = object.point;
+        const isPalette = object.kind === 'palette';
+        const radius = (isPalette ? 5 : 1.1) * point.perspective;
+        context.beginPath();
+        context.arc(point.x, point.y, radius, 0, Math.PI * 2);
+        context.fillStyle = object.color;
+        context.globalAlpha = isPalette ? 1 : 0.55;
+        context.fill();
+
+        if (isPalette) {
+          context.strokeStyle = theme.foreground;
+          context.lineWidth = object.index === selectedColor ? 2.8 : 1.3;
+          context.stroke();
+          paletteHits.push({...point, index: object.index});
+        }
+      }
+    }
+
+    context.globalAlpha = 1;
+    const origin = project(world([0,0,0]));
+    const axes = [
+      {end: [255,0,0], label: [285,0,0], index: [lastIndex,0,0], name: 'R 255', color: theme.red},
+      {end: [0,255,0], label: [0,285,0], index: [0,lastIndex,0], name: 'G 255', color: theme.green},
+      {end: [0,0,255], label: [0,0,285], index: [0,0,lastIndex], name: 'B 255', color: theme.blue},
+    ];
+    context.font = theme.font;
+    context.textAlign = 'center';
+    context.textBaseline = 'middle';
+
+    for (const axis of axes) {
+      const end = project(world(axis.end));
+      const label = project(world(axis.label, axis.index));
+      context.beginPath();
+      context.moveTo(origin.x, origin.y);
+      context.lineTo(end.x, end.y);
+      context.strokeStyle = axis.color;
+      context.lineWidth = 1.3;
+      context.stroke();
+      context.fillStyle = theme.foreground;
+      context.fillText(axis.name, label.x, label.y);
+    }
+
+    context.fillStyle = theme.muted;
+    context.fillText('0', origin.x - 12, origin.y + 12);
+  }
+
+  function updateSpinButton() {
+    spinButton.textContent = spinning ? 'Pause rotation' : 'Rotate';
+    spinButton.setAttribute('aria-pressed', String(spinning));
+  }
+
+  function tick(time) {
+    frame = null;
+    if (!spinning || document.hidden) return;
+    const elapsed = previousTime ? Math.min(0.05, (time - previousTime) / 1000) : 0;
+    previousTime = time;
+    yaw = (yaw + elapsed * Math.PI / 14) % (Math.PI * 2);
+    draw();
+
+    frame = requestAnimationFrame(tick);
+  }
+
+  function setSpinning(value) {
+    spinning = value;
+    previousTime = 0;
+    if (frame !== null) cancelAnimationFrame(frame);
+    frame = null;
+    updateSpinButton();
+    if (spinning) {
+      frame = requestAnimationFrame(tick);
+    }
+  }
+
+  spinButton.addEventListener('click', () => setSpinning(!spinning));
+  spacingInput.addEventListener('input', () => {
+    spacing = Number(spacingInput.value);
+    spacingValue.textContent = spacing;
+    draw();
+  });
+  sourceInput.addEventListener('change', draw);
+
+  canvas.addEventListener('pointerdown', event => {
+    setSpinning(false);
+    drag = {x: event.clientX, y: event.clientY, moved: false};
+    canvas.setPointerCapture(event.pointerId);
+  });
+  canvas.addEventListener('pointermove', event => {
+    if (!drag) return;
+    const dx = event.clientX - drag.x;
+    const dy = event.clientY - drag.y;
+    if (Math.abs(dx) + Math.abs(dy) > 2) drag.moved = true;
+    yaw += dx * 0.008;
+    pitch = Math.max(-1.25, Math.min(1.25, pitch + dy * 0.008));
+    drag.x = event.clientX;
+    drag.y = event.clientY;
+    draw();
+  });
+  canvas.addEventListener('pointerup', event => {
+    if (drag && !drag.moved) {
+      const bounds = canvas.getBoundingClientRect();
+      const x = event.clientX - bounds.left;
+      const y = event.clientY - bounds.top;
+      const nearest = paletteHits.map(hit => ({...hit, distance: Math.hypot(hit.x - x, hit.y - y)}))
+        .sort((left, right) => left.distance - right.distance)[0];
+      selectedColor = nearest && nearest.distance < 20 ? nearest.index : -1;
+      selection.textContent = selectedColor < 0 ? '' : `Selected color: RGB ${data.palette[selectedColor].join(', ')}`;
+    }
+    drag = null;
+    draw();
+  });
+  canvas.addEventListener('pointercancel', () => { drag = null; });
+
+  function resizeCanvas() {
+    width = canvas.parentElement.clientWidth;
+    const footerHeight = root.querySelector('.cube-legend').offsetHeight + selection.offsetHeight + 32;
+    const availableHeight = window.innerHeight - canvas.getBoundingClientRect().top - footerHeight;
+    height = Math.max(320, Math.min(availableHeight, width * 1.1));
+    const ratio = Math.min(devicePixelRatio || 1, 2);
+    canvas.width = Math.round(width * ratio);
+    canvas.height = Math.round(height * ratio);
+    canvas.style.height = `${height}px`;
+    context.setTransform(ratio, 0, 0, ratio, 0, 0);
+    updateTheme();
+  }
+
+  const resize = new ResizeObserver(resizeCanvas);
+  resize.observe(canvas.parentElement);
+  window.addEventListener('resize', resizeCanvas);
+  new MutationObserver(updateTheme).observe(document.documentElement, {attributes: true});
+  matchMedia('(prefers-color-scheme: dark)').addEventListener('change', updateTheme);
+  reducedMotion.addEventListener('change', event => { if (event.matches) setSpinning(false); });
+  document.addEventListener('visibilitychange', () => {
+    previousTime = 0;
+    if (spinning && !document.hidden && frame === null) frame = requestAnimationFrame(tick);
+  });
+  updateSpinButton();
+  if (spinning) frame = requestAnimationFrame(tick);
+})();
+</script>
+
+</body>
+</html>
