@@ -15,6 +15,8 @@ struct Options {
     size: u32,
     colors: usize,
     partitions: usize,
+    show_palette: bool,
+    palette_height: u32,
 }
 
 fn options() -> Result<Option<Options>, Box<dyn Error>> {
@@ -24,42 +26,68 @@ fn options() -> Result<Option<Options>, Box<dyn Error>> {
         size: 32,
         colors: 32,
         partitions: 3,
+        show_palette: false,
+        palette_height: 8,
     };
+
     let mut args = std::env::args().skip(1);
+
     while let Some(flag) = args.next() {
         if flag == "--help" || flag == "-h" {
-            println!("pixel-art [--input PATH] [--output PATH] [--size PIXELS] [--colors COUNT] [--partitions COUNT]");
+            println!("pixel-art [--input PATH] [--output PATH] [--size PIXELS] [--colors COUNT] [--partitions COUNT] [--show-palette] [--palette-height PIXELS]");
             println!("--size sets the longest output edge; aspect ratio is preserved.");
-            println!("--colors caps the RGB palette at 1..=256 colors (default 32), plus transparency.");
+            println!(
+                "--colors caps the RGB palette at 1..=256 colors (default 32), plus transparency."
+            );
             println!("--partitions sets RGB buckets per channel, 1..=32 (default 3).");
             println!("Use --partitions 16 for a finer palette when comparing color counts.");
+            println!(
+                "--show-palette appends a bar of equal-width palette swatches below the image."
+            );
+            println!("--palette-height sets the bar height in output pixels (default 8) and enables the bar.");
             return Ok(None);
         }
+
         match flag.as_str() {
-            "--input" | "--output" | "--size" | "--colors" | "--partitions" => {
+            "--show-palette" => options.show_palette = true,
+            "--input" | "--output" | "--size" | "--colors" | "--partitions"
+            | "--palette-height" => {
                 let value = args
                     .next()
                     .ok_or_else(|| format!("Missing value for {flag}"))?;
+
                 match flag.as_str() {
                     "--input" => options.input = value,
                     "--output" => options.output = value,
                     "--size" => options.size = value.parse()?,
                     "--colors" => options.colors = value.parse()?,
-                    _ => options.partitions = value.parse()?,
+                    "--partitions" => options.partitions = value.parse()?,
+                    _ => {
+                        options.palette_height = value.parse()?;
+                        options.show_palette = true;
+                    }
                 }
             }
             _ => return Err(format!("Unknown option: {flag}").into()),
         }
     }
+
     if options.size == 0 {
         return Err("--size must be greater than zero".into());
     }
+
     if !(1..=256).contains(&options.colors) {
         return Err("--colors must be between 1 and 256".into());
     }
+
     if !(1..=32).contains(&options.partitions) {
         return Err("--partitions must be between 1 and 32".into());
     }
+
+    if options.palette_height == 0 {
+        return Err("--palette-height must be greater than zero".into());
+    }
+
     Ok(Some(options))
 }
 
@@ -243,6 +271,11 @@ fn main() -> Result<(), Box<dyn Error>> {
     // pixel_art_image::print(&pixelated);
     if squared_output {
         pixelated = pixel_art_image::zealous_crop(&pixelated, true);
+    }
+
+    if options.show_palette {
+        pixelated =
+            pixel_art_image::with_palette_bar(&pixelated, &palette, options.palette_height)?;
     }
 
     pixel_art_image::output(&pixelated, &options.output)?;

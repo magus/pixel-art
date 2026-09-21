@@ -122,6 +122,24 @@ The pixel rendering is unchanged: each output cell uses its most frequent
 palette match. The requested color count is a cap; an image may use fewer
 colors. Transparency is an additional palette entry.
 
+Add `--show-palette` to append a palette bar below the image. The bar is 8 output
+pixels high by default. Use `--palette-height PIXELS` to choose another positive
+height; this option also enables the bar.
+
+```sh
+cargo run --release -- --input input.png --output output/with-palette.png \
+  --size 256 --colors 16 --partitions 4 --show-palette --palette-height 8
+```
+
+The bar groups visible palette entries by hue, with darker shades before lighter
+ones within each family. Gray shades follow the colored swatches. This only changes
+the bar's order. Transparency is excluded.
+Swatches have equal widths, within one pixel when the image width does
+not divide evenly. The image must be wide enough for at least one pixel per swatch.
+`--size` still controls the artwork dimensions; the bar adds to the output height.
+For example, 256 × 144 artwork with the default bar produces a 256 × 152 image.
+Without either palette-bar option, the output dimensions stay the same.
+
 Release mode applies many LLVM optimizations, `cargo run` is a very poor indicator of final performance
 
 > images/panda-bear.JPG
