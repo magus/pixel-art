@@ -9,7 +9,64 @@ use rayon::prelude::*;
 use pixel_art::image as pixel_art_image;
 use pixel_art::time::Stopwatch;
 
+struct Options {
+    input: String,
+    output: String,
+    size: u32,
+    colors: usize,
+    partitions: usize,
+}
+
+fn options() -> Result<Option<Options>, Box<dyn Error>> {
+    let mut options = Options {
+        input: "./images/panda-bear.JPG".into(),
+        output: "./output/pixelated.png".into(),
+        size: 32,
+        colors: 32,
+        partitions: 3,
+    };
+    let mut args = std::env::args().skip(1);
+    while let Some(flag) = args.next() {
+        if flag == "--help" || flag == "-h" {
+            println!("pixel-art [--input PATH] [--output PATH] [--size PIXELS] [--colors COUNT] [--partitions COUNT]");
+            println!("--size sets the longest output edge; aspect ratio is preserved.");
+            println!("--colors caps the RGB palette at 1..=256 colors (default 32), plus transparency.");
+            println!("--partitions sets RGB buckets per channel, 1..=32 (default 3).");
+            println!("Use --partitions 16 for a finer palette when comparing color counts.");
+            return Ok(None);
+        }
+        match flag.as_str() {
+            "--input" | "--output" | "--size" | "--colors" | "--partitions" => {
+                let value = args
+                    .next()
+                    .ok_or_else(|| format!("Missing value for {flag}"))?;
+                match flag.as_str() {
+                    "--input" => options.input = value,
+                    "--output" => options.output = value,
+                    "--size" => options.size = value.parse()?,
+                    "--colors" => options.colors = value.parse()?,
+                    _ => options.partitions = value.parse()?,
+                }
+            }
+            _ => return Err(format!("Unknown option: {flag}").into()),
+        }
+    }
+    if options.size == 0 {
+        return Err("--size must be greater than zero".into());
+    }
+    if !(1..=256).contains(&options.colors) {
+        return Err("--colors must be between 1 and 256".into());
+    }
+    if !(1..=32).contains(&options.partitions) {
+        return Err("--partitions must be between 1 and 32".into());
+    }
+    Ok(Some(options))
+}
+
 fn main() -> Result<(), Box<dyn Error>> {
+    let Some(options) = options()? else {
+        return Ok(());
+    };
     let debug = false;
 
     let mut stopwatch = Stopwatch::start();
@@ -24,7 +81,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     // let img = image::open("./images/portrait-landscape.JPG").unwrap();
     // let img = image::open("./images/landscape.webp").unwrap();
     // let img = image::open("./images/horse.JPG").unwrap();
-    let img = image::open("./images/panda-bear.JPG").unwrap();
+    let img = image::open(&options.input)?;
 
     stopwatch.record("reading_image");
 
@@ -41,14 +98,14 @@ fn main() -> Result<(), Box<dyn Error>> {
     // draw image to cli
     // pixel_art_image::print(&img);
 
-    let palette = pixel_art_image::palette(&img);
+    let palette = pixel_art_image::palette_with_options(&img, options.colors, options.partitions);
     stopwatch.record("palette");
 
     println!("\n🤖 pixelate\n");
 
     let palette_size = palette.len();
 
-    let output_size = 32;
+    let output_size = options.size;
     let (width, height) = img.dimensions();
     println!("   [image = {}×{}]", width, height);
 
@@ -64,6 +121,10 @@ fn main() -> Result<(), Box<dyn Error>> {
     }
     println!("   [output = {}×{}]", output_width, output_height);
     println!("   [ratio = {}]", ratio);
+
+    if output_width == 0 || output_height == 0 || output_width > width || output_height > height {
+        return Err("--size must produce nonzero dimensions no larger than the input".into());
+    }
 
     let grid_scalar_width = width as f32 / output_width as f32;
     let grid_scalar_height = height as f32 / output_height as f32;
@@ -184,7 +245,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         pixelated = pixel_art_image::zealous_crop(&pixelated, true);
     }
 
-    pixel_art_image::output(&pixelated, "./output/pixelated.png")?;
+    pixel_art_image::output(&pixelated, &options.output)?;
     stopwatch.record("output_pixelated");
 
     stopwatch.all();

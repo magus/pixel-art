@@ -14,5 +14,6 @@ mod zealous_crop;
 pub use self::colors::closest_rgb;
 pub use self::output::output;
 pub use self::palette::palette;
+pub use self::palette::palette_with_options;
 pub use self::print::print;
 pub use self::zealous_crop::zealous_crop;

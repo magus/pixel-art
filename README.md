@@ -84,6 +84,36 @@ cargo run --release  1.78s user 0.14s system 314% cpu 0.609 total
 
 ## Running
 
+Choose the input, output, and longest output edge with CLI options:
+
+```sh
+cargo run --release -- --input input.png --output output/pixelated.png --size 320
+```
+
+For a portrait 2160 × 3840 input, `--size 320` produces 180 × 320 pixels.
+The size must produce nonzero dimensions no larger than the input. Without
+options, the original panda input, output path, and 32-pixel longest edge remain
+the defaults. Run with `--help` for usage.
+
+The pixelation and palette algorithms are unchanged. The palette defaults to
+the original three partitions per RGB channel and nominal 32-color limit. That
+produces at most 27 RGB buckets, plus transparency, and can produce fewer
+distinct colors.
+
+Use `--colors` to cap the RGB palette at 1–256 entries and `--partitions` to set
+1–32 buckets per RGB channel. For example:
+
+```sh
+cargo run --release -- --input input.png --output output/32-colors.png --size 320 --colors 32 --partitions 16
+```
+
+For a color-count comparison, hold `--partitions 16` and the input and size
+constant while varying `--colors`. A finer partition setting supplies more
+candidate colors, including for 64- and 128-color palettes. The algorithm still
+averages each bucket, selects the most populated buckets, and chooses the most
+frequent palette match in each output cell. The requested color count is a cap;
+an image may use fewer colors. Transparency is an additional palette entry.
+
 Release mode applies many LLVM optimizations, `cargo run` is a very poor indicator of final performance
 
 > images/panda-bear.JPG

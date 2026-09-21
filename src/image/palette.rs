@@ -10,6 +10,18 @@ static PARTITIONS: usize = 3;
 static OUTPUT_COLOR_COUNT: usize = 32;
 
 pub fn palette(img: &DynamicImage) -> Vec<Rgba<u8>> {
+    palette_with_options(img, OUTPUT_COLOR_COUNT, PARTITIONS)
+}
+
+/// Build the original bucket-averaged palette with configurable limits.
+/// The color count caps RGB entries; transparency is appended separately.
+pub fn palette_with_options(
+    img: &DynamicImage,
+    output_color_count: usize,
+    partitions: usize,
+) -> Vec<Rgba<u8>> {
+    assert!((1..=256).contains(&output_color_count));
+    assert!((1..=32).contains(&partitions));
     println!("\n🤖 calculating color_space ...");
 
     let mut color_space: Vec<Vec<Rgba<u8>>> = Vec::new();
@@ -20,7 +32,7 @@ pub fn palette(img: &DynamicImage) -> Vec<Rgba<u8>> {
     //   for r in 0..PARTITIONS {
     //     for g in 0..PARTITIONS {
     //         for b in 0..PARTITIONS {
-    for _ in 0..PARTITIONS.pow(3) {
+    for _ in 0..partitions.pow(3) {
         color_space.push(Vec::new());
     }
 
@@ -32,7 +44,7 @@ pub fn palette(img: &DynamicImage) -> Vec<Rgba<u8>> {
     for (_x, _y, pixel) in img.pixels() {
         total_pixel_count += 1;
 
-        if let Some(color_space_index) = get_pixel_index(&pixel) {
+        if let Some(color_space_index) = get_pixel_index(&pixel, partitions) {
             used_pixel_count += 1;
 
             // periodic debug print
@@ -69,7 +81,7 @@ pub fn palette(img: &DynamicImage) -> Vec<Rgba<u8>> {
     // sort by number of pixels in each partition
     color_space.sort_by(|a, b| b.len().cmp(&a.len()));
 
-    let output_count = cmp::min(OUTPUT_COLOR_COUNT, color_space.len());
+    let output_count = cmp::min(output_color_count, color_space.len());
     let mut output = vec![];
 
     println!("\n🤖 palette\n");
@@ -112,18 +124,18 @@ pub fn palette(img: &DynamicImage) -> Vec<Rgba<u8>> {
     return output;
 }
 
-fn partition_len() -> u8 {
-    (u8::MAX as f32 / PARTITIONS as f32).ceil() as u8
+fn partition_len(partitions: usize) -> u8 {
+    (u8::MAX as f32 / partitions as f32).ceil() as u8
 }
 
-fn get_index(r: u8, g: u8, b: u8) -> usize {
+fn get_index(r: u8, g: u8, b: u8, partitions: usize) -> usize {
     // println!("{},{},{}", r, g, b);
-    return (r as usize * PARTITIONS.pow(0))
-        + (g as usize * PARTITIONS.pow(1))
-        + (b as usize * PARTITIONS.pow(2));
+    return (r as usize * partitions.pow(0))
+        + (g as usize * partitions.pow(1))
+        + (b as usize * partitions.pow(2));
 }
 
-fn get_pixel_index(pixel: &Rgba<u8>) -> Option<usize> {
+fn get_pixel_index(pixel: &Rgba<u8>, partitions: usize) -> Option<usize> {
     if let [r, g, b, alpha] = pixel.channels() {
         if *alpha == 0 {
             return None;
@@ -131,9 +143,10 @@ fn get_pixel_index(pixel: &Rgba<u8>) -> Option<usize> {
 
         let index = get_index(
             // force line break
-            get_partition(r),
-            get_partition(g),
-            get_partition(b),
+            get_partition(r, partitions),
+            get_partition(g, partitions),
+            get_partition(b, partitions),
+            partitions,
         );
 
         return Some(index as usize);
@@ -142,14 +155,14 @@ fn get_pixel_index(pixel: &Rgba<u8>) -> Option<usize> {
     None
 }
 
-fn get_partition(color: &u8) -> u8 {
+fn get_partition(color: &u8, partitions: usize) -> u8 {
     // ensure color isn't max
     let mut color = *color;
     if color == u8::MAX {
         color = color - 1
     }
 
-    let result = color / partition_len();
+    let result = color / partition_len(partitions);
     // println!(
     //     "color={},PARTITION_LEN={},result={}, u8::MAX={}",
     //     color,
