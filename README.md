@@ -1,14 +1,12 @@
 # pixel-art
+
 rust cli to generate pixel art from images
-
-
 
 ## TODO
 
 - cleanup logic in `main.rs` into a separate library function
 - cleanup parameters like palette size, color space partitions, etc. into CLI params
 - visual regression testing against test images under `images/` would be cool
-
 
 ## Notes
 
@@ -23,6 +21,7 @@ The results are drastic in both debug and release builds.
 **3.1x faster** (`29.759s` to `9.57s`)
 
 > Before
+
 ```
 ⏱️ [times::all]
    [reading_image] 2.096882366s
@@ -37,6 +36,7 @@ cargo run  31.56s user 0.09s system 106% cpu 29.759 total
 ```
 
 > After
+
 ```
 ⏱️ [times::all]
    [reading_image] 2.039194323s
@@ -55,6 +55,7 @@ cargo run  50.67s user 0.14s system 530% cpu 9.570 total
 **2.0x faster** (`1.215s` to `0.609s`)
 
 > Before
+
 ```
 ⏱️ [times::all]
    [reading_image] 62.616668ms
@@ -69,6 +70,7 @@ cargo run --release  1.06s user 0.13s system 97% cpu 1.215 total
 ```
 
 > After
+
 ```
 ⏱️ [times::all]
    [reading_image] 62.574894ms
@@ -93,7 +95,8 @@ cargo run --release -- --input input.png --output output/pixelated.png --size 32
 For a portrait 2160 × 3840 input, `--size 320` produces 180 × 320 pixels.
 The size must produce nonzero dimensions no larger than the input. Without
 options, the CLI uses the panda input, `output/pixelated.png`, and a 32-pixel longest edge.
-Run with `--help` for usage.
+Run with `--help` for usage. Add `--debug` for palette-match details and each output pixel's source
+block and selected color. Debug logging is off by default and does not change the output image.
 
 PNG output preserves embedded RGB color profiles from PNG, JPEG, TIFF, and WebP inputs, including
 Display P3. The palette and pixel values stay in the source color space. Use a `.png` output for
@@ -123,9 +126,32 @@ The pair search is deliberately simple: it checks every remaining pair after
 each merge. Runtime grows roughly with the cube of the occupied bucket count,
 so high partition settings can be slow on images with many colors.
 
-The pixel rendering is unchanged: each output cell uses its most frequent
-palette match. The requested color count is a cap; an image may use fewer
-colors. Transparency is an additional palette entry.
+Choose how each output pixel samples its source block with `--sampling`:
+
+| Value    | Rule                                                                                      |
+| -------- | ----------------------------------------------------------------------------------------- |
+| `mode`   | Choose the most frequent palette match. This keeps strong shapes but can lose thin lines. |
+| `mean`   | Average the block's RGB values, then choose the nearest palette color.                    |
+| `center` | Match the center source pixel to the palette.                                             |
+| `ink`    | Choose the 15th percentile of palette matches ordered from dark to light.                 |
+
+The default is `mode`. All four rules use the same palette and source blocks.
+`mean` often retains fine lines through intermediate shades. `ink` favors dark strokes, which can
+thicken lines and darken photos. `center` is fast but can miss details between sample points.
+
+`mean` weights source RGB values by alpha, without converting them to linear light. `mean` and `ink`
+choose transparency when average alpha coverage is below half. `mode` counts transparent pixels as
+a separate palette entry; `center` uses its sampled pixel's transparency. A nonzero alpha value counts
+as visible for palette matching. Ties use palette order. In an even-sized block, `center` uses the
+middle pixel to the right and below the midpoint.
+
+```sh
+cargo run --release -- --input input.png --output output/portrait.png --sampling mean
+```
+
+The requested color count is a cap; an image may use fewer colors. Transparency is an additional
+palette entry. See the [sampling comparison](logs/2026-09-20-sampling/README.md) to render every image
+with all four modes.
 
 Add `--show-palette` to append a palette bar below the image. The bar is 8 output
 pixels high by default. Use `--palette-height PIXELS` to choose another positive
@@ -148,6 +174,7 @@ Without either palette-bar option, the output dimensions stay the same.
 Release mode applies many LLVM optimizations, `cargo run` is a very poor indicator of final performance
 
 > images/panda-bear.JPG
+
 ```
 > time cargo run
 cargo run  32.52s user 0.10s system 106% cpu 30.721 total
@@ -162,7 +189,6 @@ cargo run --release  1.05s user 0.13s system 97% cpu 1.202 total
 cargo install flamegraph
 flamegraph --root -- target/debug/pixel-art
 ```
-
 
 ## Help
 

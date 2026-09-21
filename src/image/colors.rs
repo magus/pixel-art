@@ -1,6 +1,6 @@
 use image::{Pixel, Rgba};
 
-pub fn closest_rgb(color_list: &Vec<Rgba<u8>>, pixel: &Rgba<u8>, debug: bool) -> usize {
+pub fn closest_rgb(color_list: &[Rgba<u8>], pixel: &Rgba<u8>, debug: bool) -> usize {
     let mut closest_index = 0;
     let mut closest_diff = rgba_diff(&color_list.get(closest_index).unwrap(), &pixel);
 

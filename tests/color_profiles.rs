@@ -177,3 +177,75 @@ fn non_rgb_profile_is_not_attached_to_rgb_pixels() {
     assert!(String::from_utf8_lossy(&result.stderr).contains("RGB color profile"));
     assert!(!output.exists());
 }
+
+#[test]
+fn debug_logging_keeps_pixels_and_profile_for_every_sampling_mode() {
+    let directory = TestDirectory::new();
+    let input = directory.0.join("source.png");
+    write_source(&input, Some(DISPLAY_P3));
+
+    for sampling in ["mode", "mean", "center", "ink"] {
+        let normal = directory.0.join(format!("{sampling}.png"));
+        let debug = directory.0.join(format!("{sampling}-debug.png"));
+
+        for (output, enabled) in [(&normal, false), (&debug, true)] {
+            let mut command = Command::new(env!("CARGO_BIN_EXE_pixel-art"));
+            command
+                .arg("--input")
+                .arg(&input)
+                .arg("--output")
+                .arg(output)
+                .args(["--size", "8", "--sampling", sampling]);
+
+            if enabled {
+                command.arg("--debug");
+            }
+
+            let result = command.output().unwrap();
+            assert!(
+                result.status.success(),
+                "{}",
+                String::from_utf8_lossy(&result.stderr)
+            );
+
+            let stdout = String::from_utf8_lossy(&result.stdout);
+            for message in [
+                "🤖 pixelate",
+                "[image = 16×12]",
+                "[output = 8×6]",
+                "[ratio = ",
+                "[grid_scalar = 2x2]",
+                "[grid_size = 2×2]",
+            ] {
+                assert!(stdout.contains(message), "Missing diagnostic: {message}");
+            }
+
+            if sampling == "mode" {
+                for stage in [
+                    "initialize_color_counts",
+                    "create_pixelated_buffer",
+                    "calcuate_pixelated_grid_cells",
+                    "put_pixel_pixelated",
+                ] {
+                    assert!(stdout.contains(&format!("[time::{stage}]")));
+                }
+
+                assert_eq!(stdout.contains("[1,2] (2,4) = "), enabled);
+            }
+
+            assert_eq!(stdout.contains("[pixelate] ("), enabled);
+            let matching = if sampling == "mean" {
+                "[mean]"
+            } else {
+                "closest_rgb --"
+            };
+            assert_eq!(stdout.contains(matching), enabled);
+            assert_eq!(png_profile(output).as_deref(), Some(DISPLAY_P3));
+        }
+
+        assert_eq!(
+            image::open(normal).unwrap().to_rgba8(),
+            image::open(debug).unwrap().to_rgba8(),
+        );
+    }
+}
