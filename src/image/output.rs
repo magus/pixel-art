@@ -46,7 +46,7 @@ pub fn output(
     Ok(())
 }
 
-fn source_profile(path: &str) -> Result<Option<Vec<u8>>, Box<dyn Error>> {
+pub fn source_profile(path: &str) -> Result<Option<Vec<u8>>, Box<dyn Error>> {
     let reader = Reader::open(path)?.with_guessed_format()?;
     let profile = match reader.format() {
         Some(ImageFormat::Png) => PngDecoder::new(reader.into_inner())?.icc_profile(),

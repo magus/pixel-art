@@ -125,8 +125,13 @@ fn main() -> Result<(), Box<dyn Error>> {
     }
 
     if options.show_palette {
-        pixelated =
-            pixel_art_image::with_palette_bar(&pixelated, &palette, options.palette_height)?;
+        let profile = pixel_art_image::source_profile(&options.input)?;
+        pixelated = pixel_art_image::with_palette_bar(pixel_art_image::PaletteBar {
+            image: &pixelated,
+            palette: &palette,
+            height: options.palette_height,
+            profile: profile.as_deref(),
+        })?;
     }
 
     pixel_art_image::output(&pixelated, &options.input, &options.output)?;

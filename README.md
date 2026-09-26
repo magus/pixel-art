@@ -162,9 +162,13 @@ cargo run --release -- --input input.png --output output/with-palette.png \
   --size 256 --colors 16 --partitions 4 --show-palette --palette-height 8
 ```
 
-The bar groups visible palette entries by hue, with darker shades before lighter
-ones within each family. Gray shades follow the colored swatches. This only changes
-the bar's order. Transparency is excluded.
+The bar places visually similar colors next to each other using Oklab color distances.
+It starts at the darkest color and ends at the lightest. Between those endpoints, brightness
+can rise or fall to keep neighboring colors similar. A nearest-neighbor pass builds the order,
+then up to 100 section reversals reduce the total distance between swatches.
+The source RGB profile is used to convert temporary swatch copies to sRGB for these comparisons;
+untagged inputs are treated as sRGB. Original palette values, artwork pixels, and output profiles
+stay unchanged. Transparency is excluded. This is a smoothness heuristic, not an exact shortest path.
 Swatches have equal widths, within one pixel when the image width does
 not divide evenly. The image must be wide enough for at least one pixel per swatch.
 `--size` still controls the artwork dimensions; the bar adds to the output height.
